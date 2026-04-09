@@ -13,6 +13,7 @@
   ],
   "Clothing": [
     "models/citizen_clothes/hat/baseball_cap/baseball_cap_black.clothing",
+    "models/citizen_clothes/shirt/tshirt/tshirt.clothing",
     "models/citizen_clothes/jacket/sleeveless_jacket/sleeveless_jacket.clothing",
     "models/citizen_clothes/trousers/cargopants/cargo_pants_army.clothing",
     "models/citizen_clothes/shoes/boots/black_boots.clothing"

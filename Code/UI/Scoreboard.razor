@@ -204,7 +204,7 @@
                                 <label class="shop-description-header">@CurrentShopSection.Description</label>
 
                                 <div class="shop-list">
-                                    @foreach ( var item in CurrentShopSection.Items )
+                                    @foreach ( var item in GetVisibleShopItems() )
                                     {
                                         <div class="shop-entry">
                                             <div class="shop-copy">
@@ -485,6 +485,27 @@
     ShopSection CurrentShopSection
         => ShopSections.FirstOrDefault( x => x.Title == _selectedShopSection ) ?? ShopSections.First();
 
+    IEnumerable<ShopItem> GetVisibleShopItems()
+    {
+        if ( CurrentShopSection.Title != "Weapons" )
+            return CurrentShopSection.Items;
+
+        var isGunDealer = string.Equals(
+            LocalPlayer?.JobDefinitionPath,
+            WeaponShopCatalog.GunDealerJobDefinitionPath,
+            StringComparison.OrdinalIgnoreCase
+        );
+
+        return CurrentShopSection.Items.Where( item =>
+        {
+            if ( string.IsNullOrWhiteSpace( item.WeaponPrefabPath ) )
+                return true;
+
+            var definition = WeaponShopCatalog.Get( item.WeaponPrefabPath );
+            return definition is not { GunDealerOnly: true } || isGunDealer;
+        } );
+    }
+
     protected override void OnTreeFirstBuilt()
     {
         base.OnTreeFirstBuilt();
@@ -600,7 +621,8 @@
     bool CanBuyWeapon( ShopItem item )
     {
         return !string.IsNullOrWhiteSpace( item.WeaponPrefabPath )
-            && LocalPlayer?.CanAfford( item.Price ) == true;
+            && LocalPlayer?.CanAfford( item.Price ) == true
+            && WeaponShopCatalog.CanPlayerBuy( LocalPlayer, item.WeaponPrefabPath, out _ );
     }
 
     string GetPrinterRateText( ShopItem item )
@@ -857,6 +879,7 @@
             case ScoreboardPage.Shop:
                 hash.Add( _selectedShopSection );
                 hash.Add( LocalPlayerMoney );
+                hash.Add( LocalPlayer?.JobDefinitionPath );
                 hash.Add( LocalOwnedPrinterCount );
                 hash.Add( PrinterDefinitions.Count );
 

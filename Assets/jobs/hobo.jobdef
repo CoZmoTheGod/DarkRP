@@ -11,10 +11,11 @@
     "weapons/crowbar/crowbar.prefab"
   ],
   "Clothing": [
-    "models/citizen_clothes/hat/beanie/beanie.clothing",
-    "models/citizen_clothes/jacket/hoodie/hoodie.clothing",
+    "models/citizen_clothes/hat/flatcap/flatcap.clothing",
+    "models/citizen_clothes/jumper/cardigan/cardigan_dirty.clothing",
     "models/citizen_clothes/trousers/loosejeans/loose_jeans.clothing",
-    "models/citizen_clothes/shoes/sneakers/sneakers.clothing"
+    "models/citizen_clothes/shoes/slippers/slippers.clothing",
+    "models/citizen_clothes/gloves/fingerless_gloves/fingerless_gloves.clothing"
   ],
   "IsDefault": false,
   "__references": [],

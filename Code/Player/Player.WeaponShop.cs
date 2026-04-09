@@ -16,6 +16,12 @@ public sealed partial class Player
 			return;
 		}
 
+		if ( !WeaponShopCatalog.CanPlayerBuy( this, prefabPath, out var restrictionReason ) )
+		{
+			Notices.SendNotice( Network.Owner, "block", Color.Red, restrictionReason, 3 );
+			return;
+		}
+
 		if ( !TryTakeMoney( definition.Price ) )
 		{
 			Notices.SendNotice( Network.Owner, "block", Color.Red, "You don't have enough money.", 3 );

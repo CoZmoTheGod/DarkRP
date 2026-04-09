@@ -2,6 +2,15 @@ using Sandbox.UI;
 
 public sealed partial class Player
 {
+	sealed class BodyAppearanceSnapshot
+	{
+		public Model Model { get; init; }
+		public ulong BodyGroups { get; init; }
+		public string MaterialGroup { get; init; }
+		public Material MaterialOverride { get; init; }
+		public Dictionary<string, float> Morphs { get; init; }
+	}
+
 	[Property, Sync( SyncFlags.FromHost )]
 	public string JobDefinitionPath { get; private set; } = JobDefinition.DefaultResourcePath;
 
@@ -95,9 +104,11 @@ public sealed partial class Player
 		if ( !dresser.IsValid() )
 			return;
 
-		var manualAge = dresser.ManualAge;
-		var manualHeight = dresser.ManualHeight;
-		var manualTint = dresser.ManualTint;
+		var bodyRenderer = dresser.BodyTarget.IsValid()
+			? dresser.BodyTarget
+			: Body.GetComponent<SkinnedModelRenderer>( true );
+
+		var appearance = CaptureBodyAppearance( bodyRenderer );
 
 		dresser.Clothing.Clear();
 
@@ -118,11 +129,54 @@ public sealed partial class Player
 
 		dresser.Clear();
 		dresser.Source = Dresser.ClothingSource.Manual;
-		dresser.ManualAge = manualAge;
-		dresser.ManualHeight = manualHeight;
-		dresser.ManualTint = manualTint;
 		await dresser.Apply();
+		RestoreBodyAppearance( bodyRenderer, appearance );
 		Body.Network?.Refresh();
 		GameObject.Network?.Refresh();
+	}
+
+	static BodyAppearanceSnapshot CaptureBodyAppearance( SkinnedModelRenderer renderer )
+	{
+		if ( !renderer.IsValid() )
+			return null;
+
+		Dictionary<string, float> morphs = null;
+		if ( renderer.SceneModel is not null )
+		{
+			morphs = renderer.Morphs.Names.ToDictionary( name => name, name => renderer.SceneModel.Morphs.Get( name ) );
+		}
+
+		return new BodyAppearanceSnapshot
+		{
+			Model = renderer.Model,
+			BodyGroups = renderer.BodyGroups,
+			MaterialGroup = renderer.MaterialGroup,
+			MaterialOverride = renderer.MaterialOverride,
+			Morphs = morphs
+		};
+	}
+
+	static void RestoreBodyAppearance( SkinnedModelRenderer renderer, BodyAppearanceSnapshot appearance )
+	{
+		if ( !renderer.IsValid() || appearance is null )
+			return;
+
+		renderer.Model = appearance.Model;
+		renderer.BodyGroups = appearance.BodyGroups;
+		renderer.MaterialGroup = appearance.MaterialGroup;
+		renderer.MaterialOverride = appearance.MaterialOverride;
+
+		if ( appearance.Morphs is null || renderer.SceneModel is null )
+			return;
+
+		foreach ( var name in renderer.Morphs.Names )
+		{
+			renderer.SceneModel.Morphs.Reset( name );
+		}
+
+		foreach ( var (name, value) in appearance.Morphs )
+		{
+			renderer.SceneModel.Morphs.Set( name, value );
+		}
 	}
 }
