@@ -37,6 +37,23 @@ public sealed class Ownable : Component, IPhysgunEvent, IToolgunEvent
 
 	bool CallerHasAccess( Connection caller ) => HasAccess( caller, Owner );
 
+	static bool HasPhysgunAccess( Connection caller, Connection owner, bool pulling )
+	{
+		if ( pulling )
+			return true;
+
+		if ( caller is null )
+			return false;
+
+		if ( caller.IsHost )
+			return true;
+
+		if ( owner is null || owner == caller )
+			return true;
+
+		return Player.FindForConnection( caller )?.HasAdminAccess == true;
+	}
+
 	public static bool HasAccess( Connection caller, Connection owner )
 	{
 		if ( !OwnershipChecks ) return true;
@@ -48,7 +65,7 @@ public sealed class Ownable : Component, IPhysgunEvent, IToolgunEvent
 
 	void IPhysgunEvent.OnPhysgunGrab( IPhysgunEvent.GrabEvent e )
 	{
-		if ( !CallerHasAccess( e.Grabber ) )
+		if ( !HasPhysgunAccess( e.Grabber, Owner, e.Pulling ) )
 			e.Cancelled = true;
 	}
 

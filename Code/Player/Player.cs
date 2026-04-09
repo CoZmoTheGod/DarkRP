@@ -253,6 +253,12 @@ public sealed partial class Player : Component, Component.IDamageable, PlayerCon
 
 	void OnControl()
 	{
+		var noclip = GetComponent<NoclipMoveMode>( true );
+		if ( noclip is { Enabled: true } && !HasAdminAccess )
+		{
+			noclip.Enabled = false;
+		}
+
 		if ( Input.UsingController )
 		{
 			Controller.UseInputControls = !(Input.Down( "SpawnMenu" ) || Input.Down( "InspectMenu" ));
@@ -270,9 +276,9 @@ public sealed partial class Player : Component, Component.IDamageable, PlayerCon
 
 		if ( Input.Pressed( "jump" ) )
 		{
-			if ( _timeSinceJumpPressed < 0.3f )
+			if ( _timeSinceJumpPressed < 0.3f && HasAdminAccess )
 			{
-				if ( GetComponent<NoclipMoveMode>( true ) is { } noclip )
+				if ( noclip is not null )
 				{
 					noclip.Enabled = !noclip.Enabled;
 				}

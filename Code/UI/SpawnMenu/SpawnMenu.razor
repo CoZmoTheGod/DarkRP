@@ -71,13 +71,20 @@
 
     List<Panel> tabs = new List<Panel>();
     List<Panel> utilityTabs = new List<Panel>();
+    bool _hadAdvancedAccess;
+
+    bool CanAccessAdvancedSpawnTabs => Player.FindLocalPlayer()?.HasSuperAdminAccess == true;
 
     public void BuildTabs()
     {
+        tabs.Clear();
+        TabContainer?.DeleteChildren( true );
+
         foreach (var p in Game.TypeLibrary.GetTypes<ISpawnMenuTab>().OrderBy(x => x.Order).ThenBy(x => x.Title))
         {
             if (p.IsAbstract) continue;
             if (p.TargetType == typeof(BaseSpawnMenu)) continue;
+            if ( !CanSeeSpawnTab( p.TargetType ) ) continue;
 
             var panel = p.Create<Panel>();
             TabContainer.AddChild(panel);
@@ -90,6 +97,9 @@
 
     public void BuildUtilityTabs()
     {
+        utilityTabs.Clear();
+        UtilityContainer?.DeleteChildren( true );
+
         foreach (var p in Game.TypeLibrary.GetTypes<IUtilityTab>().OrderBy(x => x.Order).ThenBy(x => x.Title))
         {
             if (p.IsAbstract) continue;
@@ -118,10 +128,32 @@
     {
         if (firstTime && TabContainer.IsValid())
         {
+            _hadAdvancedAccess = CanAccessAdvancedSpawnTabs;
             BuildTabs();
         }
 
         if (firstTime && UtilityContainer.IsValid())
+        {
+            BuildUtilityTabs();
+        }
+    }
+
+    public override void Tick()
+    {
+        base.Tick();
+
+        var hasAdvancedAccess = CanAccessAdvancedSpawnTabs;
+        if ( _hadAdvancedAccess == hasAdvancedAccess )
+            return;
+
+        _hadAdvancedAccess = hasAdvancedAccess;
+
+        if ( TabContainer.IsValid() )
+        {
+            BuildTabs();
+        }
+
+        if ( UtilityContainer.IsValid() )
         {
             BuildUtilityTabs();
         }
@@ -158,5 +190,13 @@
     void OnMenuClicked()
     {
         Sandbox.UI.InputFocus.Clear();
+    }
+
+    static bool CanSeeSpawnTab( Type targetType )
+    {
+        if ( targetType == typeof( PropsPage ) )
+            return true;
+
+        return Player.FindLocalPlayer()?.HasSuperAdminAccess == true;
     }
 }

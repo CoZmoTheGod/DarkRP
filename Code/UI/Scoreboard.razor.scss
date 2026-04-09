@@ -25,11 +25,21 @@ Scoreboard {
 		flex-direction: column;
 	}
 
+	.menu-overlay {
+		position: absolute;
+		top: 0;
+		right: 0;
+		bottom: 0;
+		left: 0;
+		z-index: 20000;
+		pointer-events: none;
+	}
+
 	.title {
 		width: 100%;
 		flex-direction: column;
 		align-items: center;
-		padding: 0 32px;
+		padding: 0 1px;
 
 		label {
 			font-size: 32px;
@@ -70,7 +80,13 @@ Scoreboard {
 		.tabs > .menu-mode-button {
 			flex-grow: 1;
 			min-width: 0;
-			padding: 0.8rem 1.1rem;
+			padding: 0.8rem 1rem;
+
+			.title {
+				font-size: 13px;
+				white-space: nowrap;
+				overflow: hidden;
+			}
 		}
 
 		.tabs > .section-button:hover {
@@ -142,7 +158,7 @@ Scoreboard {
 		text-transform: uppercase;
 		letter-spacing: 0.1em;
 		color: $menu-accent;
-		width:100%;
+		width: 100%;
 	}
 
 	.page-center {
@@ -277,6 +293,83 @@ Scoreboard {
 		}
 	}
 
+	.admin-panel {
+		width: 100%;
+		padding-top: 12px;
+		flex-direction: column;
+		gap: 8px;
+	}
+
+	.admin-panel-label {
+		font-size: 12px;
+		font-weight: 700;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		color: $menu-text;
+	}
+
+	.admin-steam-input {
+		width: 100%;
+	}
+
+	.admin-actions {
+		flex-wrap: wrap;
+		gap: 6px;
+	}
+
+	.admin-role {
+		padding: 6px 10px;
+		border-radius: 999px;
+		font-size: 12px;
+		font-weight: 700;
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+		color: white;
+		background-color: rgba( 255, 255, 255, 0.08 );
+
+		&.admin {
+			background-color: rgba( #2d7ff9, 0.3 );
+		}
+
+		&.superadmin {
+			background-color: rgba( #f59f23, 0.3 );
+		}
+	}
+
+	.admin-info-row {
+		align-items: flex-start;
+
+		.key {
+			flex-shrink: 0;
+			max-width: 96px;
+			font-size: 12px;
+		}
+
+		.value {
+			flex-grow: 1;
+			font-size: 10px;
+			text-align: right;
+			white-space: normal;
+		}
+	}
+
+	.admin-staff-row {
+		align-items: flex-start;
+	}
+
+	.admin-action-copy {
+		min-width: 0;
+
+		.action-title {
+			font-size: 14px;
+		}
+
+		.action-description {
+			font-size: 12px;
+			white-space: normal;
+		}
+	}
+
 	.table,
 	.jobs-list {
 		width: 100%;
@@ -329,7 +422,19 @@ Scoreboard {
 
 		> .name {
 			flex-grow: 1;
+			flex-direction: row;
+			align-items: center;
+			gap: 8px;
 			font-weight: 600;
+			min-width: 0;
+			overflow: hidden;
+
+			> .display-name {
+				flex-shrink: 1;
+				min-width: 0;
+				overflow: hidden;
+				text-overflow: ellipsis;
+			}
 		}
 
 		> .stat {
@@ -409,6 +514,13 @@ Scoreboard {
 			border: 1px solid rgba( black, 0.1 );
 			background-color: rgba( #194769cc, 0.4 );
 		}
+	}
+
+	.row-role {
+		flex-shrink: 0;
+		padding: 3px 8px;
+		font-size: 10px;
+		letter-spacing: 0.06em;
 	}
 
 	.job-topline {

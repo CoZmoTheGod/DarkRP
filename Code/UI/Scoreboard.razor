@@ -213,9 +213,137 @@
                         </Body>
                     </SpawnMenuPage>
                 </div>
+
+                @if ( CanAccessAdministration )
+                {
+                    <div class="page-root @(_currentPage == ScoreboardPage.Administration ? "active" : "hidden")">
+                        <SpawnMenuContent>
+                            <Body>
+                                <div class="page-center">
+                                    <div class="dashboard-layout">
+                                        <div class="dashboard-left menuinner">
+                                            <h1>Administration</h1>
+
+                                            <div class="info-row admin-info-row">
+                                                <label class="key">Your Role</label>
+                                                <label class="value">@GetRoleLabel( LocalPlayerAdminRole )</label>
+                                            </div>
+
+                                            <div class="info-row admin-info-row">
+                                                <label class="key">Server</label>
+                                                <label class="value">@SessionType</label>
+                                            </div>
+
+                                            <div class="info-row admin-info-row">
+                                                <label class="key">Moderation</label>
+                                                <label class="value">Right click a player to kick, ban or manage roles.</label>
+                                            </div>
+
+                                            @if ( CanManageAdminRoles )
+                                            {
+                                                <div class="admin-panel">
+                                                    <label class="admin-panel-label">Manage By SteamID</label>
+                                                    <TabTextEntry @ref="AdminSteamIdEntry"
+                                                                  class="menu-input admin-steam-input"
+                                                                  Placeholder="Steam ID64"
+                                                                  Value:bind=@_adminSteamIdValue
+                                                                  OnTabPressed="@CloseFromAdminEntry" />
+                                                    <div class="admin-actions">
+                                                        <Button Text="Set Admin"
+                                                                Icon="security"
+                                                                class="menu-action primary"
+                                                                Disabled="@(!CanSubmitAdminSteamId)"
+                                                                @onclick="@(() => SubmitAdminRole( AdminRole.Admin ))" />
+                                                        <Button Text="Set SuperAdmin"
+                                                                Icon="stars"
+                                                                class="menu-action primary"
+                                                                Disabled="@(!CanSubmitAdminSteamId)"
+                                                                @onclick="@(() => SubmitAdminRole( AdminRole.SuperAdmin ))" />
+                                                        <Button Text="Remove"
+                                                                Icon="person_off"
+                                                                class="menu-action primary"
+                                                                Disabled="@(!CanSubmitAdminSteamId)"
+                                                                @onclick="@(() => SubmitAdminRole( AdminRole.None ))" />
+                                                    </div>
+                                                </div>
+                                            }
+                                        </div>
+
+                                        <div class="dashboard-right menuinner">
+                                            <h1>Online Staff</h1>
+
+                                            @{
+                                                var onlineStaff = GetOnlineStaff().ToArray();
+                                            }
+
+                                            @if ( onlineStaff.Length == 0 )
+                                            {
+                                                <div class="action-row admin-staff-row">
+                                                    <div class="action-copy admin-action-copy">
+                                                        <label class="action-title">No staff online</label>
+                                                        <label class="action-description">Admins and superadmins currently connected will appear here.</label>
+                                                    </div>
+                                                </div>
+                                            }
+                                            else
+                                            {
+                                                @foreach ( var staff in onlineStaff )
+                                                {
+                                                    <div class="action-row admin-staff-row">
+                                                        <div class="action-copy admin-action-copy">
+                                                            <label class="action-title">@staff.DisplayName</label>
+                                                            <label class="action-description">SteamID: @staff.Connection?.SteamId</label>
+                                                        </div>
+
+                                                        <label class="admin-role @GetRoleClass( GetPlayerAdminRole( staff ) )">@GetRoleLabel( GetPlayerAdminRole( staff ) )</label>
+                                                    </div>
+                                                }
+                                            }
+
+                                            @{
+                                                var savedStaff = GetSavedStaffEntries().ToArray();
+                                            }
+
+                                            @if ( Networking.IsHost && CanManageAdminRoles )
+                                            {
+                                                <h1>Saved Staff</h1>
+
+                                                @if ( savedStaff.Length == 0 )
+                                                {
+                                                    <div class="action-row admin-staff-row">
+                                                        <div class="action-copy admin-action-copy">
+                                                            <label class="action-title">No saved staff</label>
+                                                            <label class="action-description">Add a SteamID here or use the player list context menu.</label>
+                                                        </div>
+                                                    </div>
+                                                }
+                                                else
+                                                {
+                                                    @foreach ( var entry in savedStaff )
+                                                    {
+                                                        <div class="action-row admin-staff-row">
+                                                            <div class="action-copy admin-action-copy">
+                                                                <label class="action-title">@entry.Value.DisplayName</label>
+                                                                <label class="action-description">SteamID: @entry.Key</label>
+                                                            </div>
+
+                                                            <label class="admin-role @GetRoleClass( entry.Value.Role )">@GetRoleLabel( entry.Value.Role )</label>
+                                                        </div>
+                                                    }
+                                                }
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            </Body>
+                        </SpawnMenuContent>
+                    </div>
+                }
             </div>
         </div>
     </div>
+
+    <div class="menu-overlay" @ref="MenuOverlay"></div>
 </root>
 
 @code
@@ -225,7 +353,8 @@
         Dashboard,
         Players,
         Jobs,
-        Shop
+        Shop,
+        Administration
     }
 
     sealed class NavigationItem
@@ -302,14 +431,6 @@
         public string PrinterDefinitionPath { get; }
     }
 
-    static readonly NavigationItem[] NavigationItems =
-    {
-        new NavigationItem( ScoreboardPage.Dashboard, "Dashboard" ),
-        new NavigationItem( ScoreboardPage.Players, "Players" ),
-        new NavigationItem( ScoreboardPage.Jobs, "Jobs" ),
-        new NavigationItem( ScoreboardPage.Shop, "Shop" )
-    };
-
     static readonly QuickAction[] QuickActions =
     {
         new QuickAction( "Change Job", "Reserved slot for the future job-selection flow." ),
@@ -358,8 +479,12 @@
     string _mapTitle = null;
     string _selectedShopSection = "Printers";
     string _dropMoneyValue = "";
+    string _adminSteamIdValue = "";
     bool _isOpen;
+    static Panel _currentMenuOverlay;
     MoneyDropEntry DropMoneyEntry = default;
+    TabTextEntry AdminSteamIdEntry = default;
+    Panel MenuOverlay = default;
 
     int PlayerCount => Scene.GetAll<PlayerData>().Count();
     Player LocalPlayer => Player.FindLocalPlayer();
@@ -367,8 +492,13 @@
     int LocalOwnedPrinterCount => MoneyPrinter.CountOwned( Connection.Local );
     string LocalPlayerJob => string.IsNullOrWhiteSpace( LocalPlayer?.JobTitle ) ? "Citizen" : LocalPlayer.JobTitle;
     bool CanDropMoney => TryGetDropMoneyAmount( out var amount ) && LocalPlayer?.CanAfford( amount ) == true;
+    bool CanAccessAdministration => LocalPlayer?.HasAdminAccess == true;
+    bool CanManageAdminRoles => LocalPlayer?.HasSuperAdminAccess == true;
+    bool CanSubmitAdminSteamId => TryGetAdminSteamId( out _ );
+    AdminRole LocalPlayerAdminRole => LocalPlayer?.HasSuperAdminAccess == true ? AdminRole.SuperAdmin : LocalPlayer?.AdminRole ?? AdminRole.None;
     IReadOnlyList<MoneyPrinterDefinition> PrinterDefinitions => MoneyPrinterDefinition.GetAll();
     ShopSection[] ShopSections => BuildShopSections();
+    NavigationItem[] NavigationItems => BuildNavigationItems();
 
     string LocalPlayerName
         => Scene.GetAll<PlayerData>().FirstOrDefault( x => x.IsMe )?.DisplayName ?? "Current Player";
@@ -387,6 +517,24 @@
     void SelectPage( ScoreboardPage page )
     {
         _currentPage = page;
+    }
+
+    NavigationItem[] BuildNavigationItems()
+    {
+        var items = new List<NavigationItem>
+        {
+            new( ScoreboardPage.Dashboard, "Dashboard" ),
+            new( ScoreboardPage.Players, "Players" ),
+            new( ScoreboardPage.Jobs, "Jobs" ),
+            new( ScoreboardPage.Shop, "Shop" )
+        };
+
+        if ( CanAccessAdministration )
+        {
+            items.Add( new NavigationItem( ScoreboardPage.Administration, "Administration" ) );
+        }
+
+        return items.ToArray();
     }
 
     void OnSectionHover( ScoreboardPage page )
@@ -435,7 +583,7 @@
         [
             new ShopSection(
                 "Printers",
-                "Purchase money printers with server-authoritative placement and generation.",
+                "Buy money printers to generate cash over time.",
                 PrinterDefinitions
                     .Select( x => new ShopItem( x.Title, x.Price, x.Description, x.ResourcePath ) )
                     .ToArray()
@@ -465,11 +613,61 @@
             .ThenBy( x => x.DisplayName );
     }
 
+    IEnumerable<PlayerData> GetOnlineStaff()
+    {
+        return GetPlayers().Where( x => GetPlayerAdminRole( x ) != AdminRole.None );
+    }
+
+    IEnumerable<KeyValuePair<SteamId, AdminSystem.Entry>> GetSavedStaffEntries()
+    {
+        if ( !Networking.IsHost )
+            return Enumerable.Empty<KeyValuePair<SteamId, AdminSystem.Entry>>();
+
+        return AdminSystem.Current?.GetEntries()
+            .OrderByDescending( x => x.Value.Role )
+            .ThenBy( x => x.Value.DisplayName )
+            ?? Enumerable.Empty<KeyValuePair<SteamId, AdminSystem.Entry>>();
+    }
+
+    AdminRole GetPlayerAdminRole( PlayerData entry )
+    {
+        if ( entry?.Connection?.IsHost == true )
+            return AdminRole.SuperAdmin;
+
+        return Player.For( entry?.PlayerId ?? Guid.Empty )?.AdminRole ?? AdminRole.None;
+    }
+
+    string GetRoleLabel( AdminRole role )
+    {
+        return role switch
+        {
+            AdminRole.Admin => "Admin",
+            AdminRole.SuperAdmin => "SuperAdmin",
+            _ => "Player"
+        };
+    }
+
+    string GetRoleClass( AdminRole role )
+    {
+        return role switch
+        {
+            AdminRole.Admin => "admin",
+            AdminRole.SuperAdmin => "superadmin",
+            _ => "none"
+        };
+    }
+
     string FormatCurrency( int amount ) => $"${amount:n0}";
 
     bool TryGetDropMoneyAmount( out int amount )
     {
         return int.TryParse( _dropMoneyValue, out amount ) && amount > 0;
+    }
+
+    bool TryGetAdminSteamId( out long steamId )
+    {
+        steamId = 0;
+        return ulong.TryParse( _adminSteamIdValue, out var parsed ) && parsed > 0 && (steamId = (long)parsed) > 0;
     }
 
     void DropMoney()
@@ -482,6 +680,16 @@
         DropMoneyEntry?.Blur();
     }
 
+    void SubmitAdminRole( AdminRole role )
+    {
+        if ( !TryGetAdminSteamId( out var steamId ) )
+            return;
+
+        LocalPlayer?.RequestSetAdminRole( steamId, role );
+        _adminSteamIdValue = "";
+        AdminSteamIdEntry?.Blur();
+    }
+
     void SetOpen( bool open )
     {
         if ( _isOpen == open )
@@ -492,12 +700,23 @@
         if ( !open )
         {
             DropMoneyEntry?.Blur();
+            AdminSteamIdEntry?.Blur();
         }
     }
 
     void CloseFromDropEntry()
     {
         SetOpen( false );
+    }
+
+    void CloseFromAdminEntry()
+    {
+        SetOpen( false );
+    }
+
+    public static Panel GetMenuOverlay()
+    {
+        return _currentMenuOverlay.IsValid() ? _currentMenuOverlay : null;
     }
 
     async void FetchMap()
@@ -513,8 +732,14 @@
 
     protected override void OnUpdate()
     {
+        if ( MenuOverlay.IsValid() )
+        {
+            _currentMenuOverlay = MenuOverlay;
+        }
+
         Panel.AcceptsFocus = false;
         var dropMoneyHasFocus = DropMoneyEntry?.HasFocus ?? false;
+        var adminSteamIdHasFocus = AdminSteamIdEntry?.HasFocus ?? false;
 
         var host = Game.ActiveScene.Get<SpawnMenuHost>();
         if ( host?.Panel?.HasClass( "open" ) ?? false )
@@ -523,7 +748,12 @@
             Input.Clear( "Score" );
         }
 
-        if ( (Input.Pressed( "Score" ) || Input.Keyboard.Pressed( "Tab" )) && !dropMoneyHasFocus )
+        if ( !CanAccessAdministration && _currentPage == ScoreboardPage.Administration )
+        {
+            _currentPage = ScoreboardPage.Players;
+        }
+
+        if ( (Input.Pressed( "Score" ) || Input.Keyboard.Pressed( "Tab" )) && !dropMoneyHasFocus && !adminSteamIdHasFocus )
         {
             SetOpen( !_isOpen );
         }
@@ -541,11 +771,33 @@
         hash.Add( _currentPage );
         hash.Add( _selectedShopSection );
         hash.Add( _dropMoneyValue );
+        hash.Add( _adminSteamIdValue );
+        hash.Add( CanAccessAdministration );
+        hash.Add( CanManageAdminRoles );
+        hash.Add( (int)LocalPlayerAdminRole );
         hash.Add( PrinterDefinitions.Count );
 
         foreach ( var definition in PrinterDefinitions )
         {
             hash.Add( definition.ResourcePath );
+        }
+
+        foreach ( var item in NavigationItems )
+        {
+            hash.Add( item.Title );
+        }
+
+        foreach ( var staff in GetOnlineStaff() )
+        {
+            hash.Add( staff.PlayerId );
+            hash.Add( (int)GetPlayerAdminRole( staff ) );
+        }
+
+        foreach ( var entry in GetSavedStaffEntries() )
+        {
+            hash.Add( entry.Key.Value );
+            hash.Add( entry.Value.DisplayName );
+            hash.Add( (int)entry.Value.Role );
         }
 
         return hash.ToHashCode();
