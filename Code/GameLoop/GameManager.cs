@@ -83,6 +83,7 @@ public sealed partial class GameManager : GameObjectSystem<GameManager>, Compone
 		var player = playerGo.Components.Get<Player>( true );
 		player.PlayerData = playerData;
 		player.LoadRoleplayData();
+		player.EnsureValidJobDefinition();
 		AdminSystem.Current?.RefreshPlayerRole( player );
 
 		var owner = Connection.Find( playerData.PlayerId );

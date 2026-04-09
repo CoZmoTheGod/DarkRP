@@ -113,6 +113,12 @@ public partial class BaseCarryable : Component, IKillIcon
 	[Sync( SyncFlags.FromHost ), Change( nameof( OnItemVisibility ) )]
 	public bool IsItem { get; set; } = true;
 
+	/// <summary>
+	/// Job loadout items are locked in the inventory and can't be dropped or removed by the player.
+	/// </summary>
+	[Sync( SyncFlags.FromHost )]
+	public bool IsJobLocked { get; set; }
+
 	private void OnItemVisibility( bool oldVal, bool newVal )
 	{
 		if ( DroppedGameObject.IsValid() )

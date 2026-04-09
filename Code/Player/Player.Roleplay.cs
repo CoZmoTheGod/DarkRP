@@ -47,6 +47,10 @@ public sealed partial class Player
 			return;
 
 		JobTitle = string.IsNullOrWhiteSpace( title ) ? "Citizen" : title.Trim();
+		if ( PlayerData.IsValid() )
+		{
+			PlayerData.JobTitle = JobTitle;
+		}
 	}
 
 	[Rpc.Host]

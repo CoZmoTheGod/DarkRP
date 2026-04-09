@@ -380,6 +380,16 @@ Scoreboard {
 		margin-right: auto;
 	}
 
+	.jobs-scroll-wrapper {
+		width: 100%;
+		max-width: 1120px;
+		height: 100%;
+		min-height: 0;
+		margin-left: auto;
+		margin-right: auto;
+		position: relative;
+	}
+
 	.table,
 	.col,
 	.jobs-list,
@@ -523,9 +533,104 @@ Scoreboard {
 		letter-spacing: 0.06em;
 	}
 
+	.identity {
+		min-width: 0;
+		flex-direction: column;
+		gap: 1px;
+	}
+
+	.player-job {
+		font-size: 11px;
+		font-weight: 700;
+		letter-spacing: 0.04em;
+		text-transform: uppercase;
+		opacity: 0.95;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+
 	.job-topline {
 		gap: 8px;
 		align-items: center;
+	}
+
+	.job-entry {
+		min-height: 132px;
+		padding: 14px 16px;
+		gap: 14px;
+		align-items: flex-start;
+		border: 1px solid rgba( 255, 255, 255, 0.05 );
+		border-radius: 10px;
+		transition: background-color 0.12s ease, border-color 0.12s ease, transform 0.12s ease;
+
+		&.current {
+			background-color: rgba( $color-accent, 0.12 );
+			border: 1px solid rgba( $color-accent, 0.3 );
+		}
+
+		&.full {
+			border-color: rgba( #f59f23, 0.2 );
+		}
+
+		&.selectable {
+			cursor: pointer;
+
+			&:hover {
+				background-color: rgba( $color-accent, 0.1 );
+				border-color: rgba( $color-accent, 0.35 );
+				transform: translateY( -1px );
+			}
+		}
+	}
+
+	.job-gear {
+		margin-top: 4px;
+		font-size: 12px;
+		color: rgba( white, 0.7 );
+		white-space: normal;
+	}
+
+	.jobs-list {
+		gap: 10px;
+		height: 100%;
+		min-height: 0;
+		overflow-y: scroll;
+		overflow-x: hidden;
+		padding: 10px 0;
+		padding-right: 6px;
+	}
+
+	.job-main {
+		min-width: 0;
+		gap: 6px;
+		align-items: flex-start;
+	}
+
+	.job-name {
+		font-size: 18px;
+	}
+
+	.job-category {
+		padding: 4px 8px;
+		border-radius: 999px;
+		font-size: 11px;
+		font-weight: 700;
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+		color: rgba( white, 0.85 );
+		background-color: rgba( 255, 255, 255, 0.06 );
+		opacity: 1;
+	}
+
+	.job-description {
+		margin-top: 2px;
+		padding-top: 2px;
+		height: auto;
+		min-height: 0;
+		flex-shrink: 0;
+		font-size: 14px;
+		white-space: normal;
 	}
 
 	.job-meta,
@@ -536,10 +641,41 @@ Scoreboard {
 		flex-shrink: 0;
 	}
 
+	.job-meta {
+		min-width: 180px;
+		gap: 4px;
+	}
+
 	.shop-buy {
 		margin-top: 4px;
 		min-width: 88px;
 		justify-content: center;
+	}
+
+	.job-select {
+		margin-top: 6px;
+		min-width: 120px;
+		min-height: 40px;
+		justify-content: center;
+	}
+
+	.job-status {
+		margin-top: 6px;
+		padding: 6px 10px;
+		border-radius: 999px;
+		font-size: 12px;
+		font-weight: 700;
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+		color: white;
+
+		&.current {
+			background-color: rgba( #35b851, 0.28 );
+		}
+
+		&.full {
+			background-color: rgba( #f59f23, 0.28 );
+		}
 	}
 
 	.shop-body {

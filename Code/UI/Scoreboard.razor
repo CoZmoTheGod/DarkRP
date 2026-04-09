@@ -52,7 +52,7 @@
 
                                         <div class="info-row">
                                             <label class="key">Salary</label>
-                                            <label class="value">@FormatCurrency( 45 )</label>
+                                            <label class="value">@FormatCurrency( LocalPlayerSalary )</label>
                                         </div>
 
                                         <div class="info-row">
@@ -130,27 +130,50 @@
                 <div class="page-root @(_currentPage == ScoreboardPage.Jobs ? "active" : "hidden")">
                     <SpawnMenuContent>
                         <Body>
-                            <div class="page-center">
-                                <div class="jobs-list">
-                                    @foreach ( var job in JobPlaceholders )
-                                    {
-                                        <div class="job-entry">
-                                            <div class="job-main">
-                                                <div class="job-topline">
-                                                    <label class="job-name">@job.Name</label>
-                                                    <label class="job-category">@job.Category</label>
+                            <div class="page-center jobs-page-center">
+                                <div class="jobs-scroll-wrapper">
+                                    <div class="jobs-list">
+                                        @foreach ( var job in JobDefinitions )
+                                        {
+                                            var isCurrentJob = IsCurrentJob( job );
+                                            var canSelectJob = CanSelectJob( job );
+
+                                            <div class="job-entry @(isCurrentJob ? "current" : "") @(!canSelectJob && !isCurrentJob ? "full" : "") @(canSelectJob ? "selectable" : "")"
+                                                 @onclick="@(() => SelectJob( job ))">
+                                                <div class="job-main">
+                                                    <div class="job-topline">
+                                                        <label class="job-name" style="@GetJobAccentStyle( job )">@job.Title</label>
+                                                        <label class="job-category">@job.Category</label>
+                                                    </div>
+
+                                                    <label class="job-description">@job.Description</label>
+                                                    <label class="job-gear">@GetJobStartingGearText( job )</label>
                                                 </div>
 
-                                                <label class="job-description">@job.Description</label>
-                                            </div>
+                                                <div class="job-meta">
+                                                    <label class="job-meta-item">Salary: @FormatCurrency( job.Salary )</label>
+                                                    <label class="job-meta-item">Slots: @GetJobSlotsText( job )</label>
+                                                    <label class="job-meta-item">Cmd: @job.Command</label>
 
-                                            <div class="job-meta">
-                                                <label class="job-meta-item">Salary: @FormatCurrency( job.Salary )</label>
-                                                <label class="job-meta-item">Slots: @job.Slots</label>
-                                                <label class="job-meta-item">Cmd: @job.Command</label>
+                                                    @if ( isCurrentJob )
+                                                    {
+                                                        <label class="job-status current">Current</label>
+                                                    }
+                                                    else if ( !canSelectJob )
+                                                    {
+                                                        <label class="job-status full">Full</label>
+                                                    }
+                                                    else
+                                                    {
+                                                        <Button Text="Choose"
+                                                                class="menu-action primary job-select"
+                                                                @onclick:stopPropagation="true"
+                                                                @onclick="@(() => SelectJob( job ))" />
+                                                    }
+                                                </div>
                                             </div>
-                                        </div>
-                                    }
+                                        }
+                                    </div>
                                 </div>
                             </div>
                         </Body>
@@ -387,26 +410,6 @@
         public string Description { get; }
     }
 
-    sealed class JobPlaceholder
-    {
-        public JobPlaceholder( string name, string category, int salary, string slots, string command, string description )
-        {
-            Name = name;
-            Category = category;
-            Salary = salary;
-            Slots = slots;
-            Command = command;
-            Description = description;
-        }
-
-        public string Name { get; }
-        public string Category { get; }
-        public int Salary { get; }
-        public string Slots { get; }
-        public string Command { get; }
-        public string Description { get; }
-    }
-
     sealed class ShopSection
     {
         public ShopSection( string title, string description, ShopItem[] items )
@@ -441,24 +444,10 @@
 
     static readonly QuickAction[] QuickActions =
     {
-        new QuickAction( "Change Job", "Reserved slot for the future job-selection flow." ),
-        new QuickAction( "Open Shop", "Reserved slot for entity and shipment purchasing." ),
+        new QuickAction( "Change Job", "Use the Jobs tab to switch roles, uniforms, and starting gear." ),
+        new QuickAction( "Open Shop", "Use the Shop tab to buy printers and individual weapons." ),
         new QuickAction( "Request License", "Reserved slot for mayor and police interactions." ),
         new QuickAction( "View Laws", "Reserved slot for city laws and server rules." )
-    };
-
-    static readonly JobPlaceholder[] JobPlaceholders =
-    {
-        new JobPlaceholder( "Citizen", "Civilian", 45, "Unlimited", "/citizen", "Default city resident with access to the standard roleplay loop." ),
-        new JobPlaceholder( "Civil Protection", "Government", 65, "4 slots", "/cp", "Patrol the streets, respond to crimes and protect the mayor." ),
-        new JobPlaceholder( "Police Chief", "Government", 90, "1 slot", "/chief", "Lead the police force and coordinate raids or lockdowns." ),
-        new JobPlaceholder( "Mayor", "Government", 110, "1 slot", "/mayor", "Run the city, define laws and direct the public order response." ),
-        new JobPlaceholder( "Gangster", "Criminal", 55, "4 slots", "/gangster", "Work the underground economy and support the mob boss." ),
-        new JobPlaceholder( "Mob Boss", "Criminal", 85, "1 slot", "/mobboss", "Lead organized crime and coordinate the gangster team." ),
-        new JobPlaceholder( "Gun Dealer", "Commerce", 70, "2 slots", "/gundealer", "Provide weapons, ammo and contraband to paying customers." ),
-        new JobPlaceholder( "Medic", "Services", 60, "3 slots", "/medic", "Heal injured players and provide mobile support in active scenes." ),
-        new JobPlaceholder( "Cook", "Services", 40, "2 slots", "/cook", "Prepare and sell food to keep the city supplied." ),
-        new JobPlaceholder( "Hobo", "Civilian", 0, "2 slots", "/hobo", "Survive with almost nothing and lean into street-level roleplay." )
     };
 
     ScoreboardPage _currentPage = ScoreboardPage.Players;
@@ -472,10 +461,10 @@
     MoneyDropEntry DropMoneyEntry = default;
     TabTextEntry AdminSteamIdEntry = default;
     Panel MenuOverlay = default;
-
     int PlayerCount => Scene.GetAll<PlayerData>().Count();
     Player LocalPlayer => Player.FindLocalPlayer();
     int LocalPlayerMoney => LocalPlayer?.Money ?? 0;
+    int LocalPlayerSalary => LocalPlayer?.CurrentJobDefinition?.Salary ?? 0;
     int LocalOwnedPrinterCount => MoneyPrinter.CountOwned( Connection.Local );
     string LocalPlayerJob => string.IsNullOrWhiteSpace( LocalPlayer?.JobTitle ) ? "Citizen" : LocalPlayer.JobTitle;
     bool CanDropMoney => TryGetDropMoneyAmount( out var amount ) && LocalPlayer?.CanAfford( amount ) == true;
@@ -484,6 +473,7 @@
     bool CanSubmitAdminSteamId => TryGetAdminSteamId( out _ );
     AdminRole LocalPlayerAdminRole => LocalPlayer?.HasSuperAdminAccess == true ? AdminRole.SuperAdmin : LocalPlayer?.AdminRole ?? AdminRole.None;
     IReadOnlyList<MoneyPrinterDefinition> PrinterDefinitions => MoneyPrinterDefinition.GetAll();
+    IReadOnlyList<JobDefinition> JobDefinitions => JobDefinition.GetAll();
     ShopSection[] ShopSections => BuildShopSections();
     NavigationItem[] NavigationItems => BuildNavigationItems();
 
@@ -535,6 +525,69 @@
     void SelectShopSection( string name )
     {
         _selectedShopSection = name;
+    }
+
+    bool IsCurrentJob( JobDefinition job )
+    {
+        return job is not null
+            && string.Equals( LocalPlayer?.JobDefinitionPath, job.ResourcePath, StringComparison.OrdinalIgnoreCase );
+    }
+
+    bool CanSelectJob( JobDefinition job )
+    {
+        return job is not null
+            && LocalPlayer is not null
+            && JobManager.CanJoin( LocalPlayer, job, out _ )
+            && !IsCurrentJob( job );
+    }
+
+    string GetJobAccentStyle( JobDefinition job )
+    {
+        return $"color: {FormatColorCss( job?.GetDisplayColor() ?? Color.White )};";
+    }
+
+    static string FormatColorCss( Color color )
+    {
+        return $"rgba({(int)(color.r * 255f)}, {(int)(color.g * 255f)}, {(int)(color.b * 255f)}, {color.a:0.###})";
+    }
+
+    string GetJobSlotsText( JobDefinition job ) => JobManager.FormatSlots( job );
+
+    string GetJobStartingGearText( JobDefinition job )
+    {
+        if ( job?.StartingItems is null || job.StartingItems.Length == 0 )
+            return "Starting Gear: None";
+
+        var names = job.StartingItems
+            .Select( GetStartingItemName )
+            .Where( x => !string.IsNullOrWhiteSpace( x ) )
+            .ToArray();
+
+        return names.Length == 0
+            ? "Starting Gear: None"
+            : $"Starting Gear: {string.Join( ", ", names )}";
+    }
+
+    string GetStartingItemName( string prefabPath )
+    {
+        if ( string.IsNullOrWhiteSpace( prefabPath ) )
+            return null;
+
+        var prefab = GameObject.GetPrefab( prefabPath );
+        var carryable = prefab?.GetComponent<BaseCarryable>( true );
+        if ( carryable.IsValid() && !string.IsNullOrWhiteSpace( carryable.DisplayName ) )
+            return carryable.DisplayName;
+
+        return System.Globalization.CultureInfo.InvariantCulture.TextInfo
+            .ToTitleCase( System.IO.Path.GetFileNameWithoutExtension( prefabPath ).Replace( "_", " " ) );
+    }
+
+    void SelectJob( JobDefinition job )
+    {
+        if ( job is null || !CanSelectJob( job ) )
+            return;
+
+        LocalPlayer?.RequestSetJob( job.ResourcePath );
     }
 
     bool CanBuyPrinter( ShopItem item )
@@ -757,40 +810,77 @@
     protected override int BuildHash()
     {
         var hash = new System.HashCode();
-        hash.Add( PlayerCount );
-        hash.Add( LocalPlayerMoney );
-        hash.Add( LocalOwnedPrinterCount );
-        hash.Add( LocalPlayerJob );
         hash.Add( _currentPage );
-        hash.Add( _selectedShopSection );
-        hash.Add( _dropMoneyValue );
-        hash.Add( _adminSteamIdValue );
         hash.Add( CanAccessAdministration );
         hash.Add( CanManageAdminRoles );
-        hash.Add( (int)LocalPlayerAdminRole );
-        hash.Add( PrinterDefinitions.Count );
-
-        foreach ( var definition in PrinterDefinitions )
-        {
-            hash.Add( definition.ResourcePath );
-        }
 
         foreach ( var item in NavigationItems )
-        {
             hash.Add( item.Title );
-        }
 
-        foreach ( var staff in GetOnlineStaff() )
+        switch ( _currentPage )
         {
-            hash.Add( staff.PlayerId );
-            hash.Add( (int)GetPlayerAdminRole( staff ) );
-        }
+            case ScoreboardPage.Dashboard:
+                hash.Add( LocalPlayerName );
+                hash.Add( LocalPlayerJob );
+                hash.Add( LocalPlayerMoney );
+                hash.Add( LocalPlayerSalary );
+                hash.Add( SessionType );
+                hash.Add( _dropMoneyValue );
+                break;
 
-        foreach ( var entry in GetSavedStaffEntries() )
-        {
-            hash.Add( entry.Key.Value );
-            hash.Add( entry.Value.DisplayName );
-            hash.Add( (int)entry.Value.Role );
+            case ScoreboardPage.Players:
+                hash.Add( PlayerCount );
+
+                foreach ( var player in GetPlayers() )
+                {
+                    hash.Add( player.PlayerId );
+                    hash.Add( player.DisplayName );
+                    hash.Add( player.JobDefinitionPath );
+                    hash.Add( player.JobTitle );
+                    hash.Add( player.Kills );
+                    hash.Add( player.Deaths );
+                    hash.Add( (int)GetPlayerAdminRole( player ) );
+                }
+                break;
+
+            case ScoreboardPage.Jobs:
+                hash.Add( LocalPlayer?.JobDefinitionPath );
+
+                foreach ( var job in JobDefinitions )
+                {
+                    hash.Add( job.ResourcePath );
+                    hash.Add( job.GetDisplayColor() );
+                    hash.Add( JobManager.CountPlayers( job ) );
+                }
+                break;
+
+            case ScoreboardPage.Shop:
+                hash.Add( _selectedShopSection );
+                hash.Add( LocalPlayerMoney );
+                hash.Add( LocalOwnedPrinterCount );
+                hash.Add( PrinterDefinitions.Count );
+
+                foreach ( var definition in PrinterDefinitions )
+                    hash.Add( definition.ResourcePath );
+                break;
+
+            case ScoreboardPage.Administration:
+                hash.Add( (int)LocalPlayerAdminRole );
+                hash.Add( _adminSteamIdValue );
+
+                foreach ( var staff in GetOnlineStaff() )
+                {
+                    hash.Add( staff.PlayerId );
+                    hash.Add( (int)GetPlayerAdminRole( staff ) );
+                }
+
+                foreach ( var entry in GetSavedStaffEntries() )
+                {
+                    hash.Add( entry.Key.Value );
+                    hash.Add( entry.Value.DisplayName );
+                    hash.Add( (int)entry.Value.Role );
+                }
+                break;
         }
 
         return hash.ToHashCode();

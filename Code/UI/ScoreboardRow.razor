@@ -12,7 +12,10 @@
 
 		<img class="avatar" src="avatar:@steamId" />
 		<div class="name">
-			<div class="display-name">@Entry.DisplayName</div>
+			<div class="identity">
+				<div class="display-name">@Entry.DisplayName</div>
+				<label class="player-job" style="@GetJobAccentStyle()">@GetJobTitle()</label>
+			</div>
 			@if ( role != AdminRole.None )
 			{
 				<label class="admin-role row-role @GetRoleClass( role )">@GetRoleLabel( role )</label>
@@ -162,8 +165,33 @@
 		Player.FindLocalPlayer()?.RequestSetAdminRole( (long)Entry.Connection.SteamId.Value, role );
 	}
 
+	string GetJobTitle()
+	{
+		return string.IsNullOrWhiteSpace( Entry?.JobTitle ) ? "Citizen" : Entry.JobTitle;
+	}
+
+	string GetJobAccentStyle()
+	{
+		var color = JobDefinition.Get( Entry?.JobDefinitionPath )?.GetDisplayColor() ?? Color.White;
+		return $"color: rgba({(int)(color.r * 255f)}, {(int)(color.g * 255f)}, {(int)(color.b * 255f)}, {color.a:0.###});";
+	}
+
 	Panel GetMenuSourcePanel()
 	{
 		return Game.ActiveScene.Get<Scoreboard>()?.Panel ?? this;
+	}
+
+	protected override int BuildHash()
+	{
+		return HashCode.Combine(
+			Entry?.PlayerId,
+			Entry?.DisplayName,
+			Entry?.JobDefinitionPath,
+			Entry?.JobTitle,
+			Entry?.Kills,
+			Entry?.Deaths,
+			Entry?.Ping,
+			(int)GetEntryAdminRole()
+		);
 	}
 }

@@ -12,6 +12,8 @@ public sealed partial class PlayerData : Component, ISaveEvents
 
 	[Sync] public int Kills { get; set; }
 	[Sync] public int Deaths { get; set; }
+	[Sync] public string JobDefinitionPath { get; set; } = JobDefinition.DefaultResourcePath;
+	[Sync] public string JobTitle { get; set; } = "Citizen";
 
 	[Sync] public bool IsGodMode { get; set; }
 
@@ -60,6 +62,12 @@ public sealed partial class PlayerData : Component, ISaveEvents
 	{
 		_needsRespawn = true;
 		_timeSinceDied = 0;
+	}
+
+	public void SetJob( string definitionPath, string title )
+	{
+		JobDefinitionPath = string.IsNullOrWhiteSpace( definitionPath ) ? JobDefinition.DefaultResourcePath : definitionPath;
+		JobTitle = string.IsNullOrWhiteSpace( title ) ? "Citizen" : title.Trim();
 	}
 
 	/// <summary>

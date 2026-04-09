@@ -31,12 +31,19 @@
 
     static InventorySlot _hoveredDragSlot;
 
-    public override bool WantsDrag => true;
+    public override bool WantsDrag
+    {
+        get
+        {
+            var weapon = GetWeapon();
+            return weapon.IsValid() && !weapon.IsJobLocked;
+        }
+    }
 
     protected override void OnDragStart( DragEvent e )
     {
         var weapon = GetWeapon();
-        if ( !weapon.IsValid() ) return;
+        if ( !weapon.IsValid() || weapon.IsJobLocked ) return;
 
         var icon = weapon.InventoryIconOverride ?? weapon.DisplayIcon?.ResourcePath;
 
@@ -74,6 +81,8 @@
         if ( Box.RectOuter.IsInside( mousePos ) ) return;
 
         var weapon = GetWeapon();
+        if ( !weapon.IsValid() || weapon.IsJobLocked ) return;
+
         if ( !Inventory.Drop( weapon ) && weapon.IsValid() )
             Inventory.Remove( weapon );
     }
@@ -107,6 +116,7 @@
         SetClass("hovered", Hovered && hasWeapon);
         SetClass("switchable", hasWeapon && weapon.CanSwitch());
         SetClass("no-tint", hasWeapon && weapon is SpawnerWeapon);
+        SetClass("locked", hasWeapon && weapon.IsJobLocked);
 
         if (hasWeapon && IconPanel is not null)
         {
@@ -151,6 +161,9 @@
         // Hotbar-to-hotbar: move or swap the dragged slot with this slot.
         if ( data.Source is InventorySlot sourceSlot && sourceSlot.Inventory == Inventory )
         {
+            if ( sourceSlot.GetWeapon() is { IsJobLocked: true } )
+                return;
+
             data.Handled = true;
             Inventory.MoveSlot( sourceSlot.Index, Index );
             return;

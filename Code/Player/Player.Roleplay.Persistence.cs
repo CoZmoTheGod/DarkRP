@@ -20,6 +20,8 @@ public sealed partial class Player
 			_isRestoringRoleplayData = false;
 		}
 
+		EnsureValidJobDefinition();
+
 		if ( loadedFromBackup )
 		{
 			SaveRoleplayData();

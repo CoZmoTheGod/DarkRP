@@ -58,8 +58,24 @@ public sealed class PlayerInventory : Component, IPlayerEvent, ISaveEvents
 
 	public void GiveDefaultWeapons()
 	{
-		Pickup( "weapons/physgun/physgun.prefab", false );
-		Pickup( "weapons/toolgun/toolgun.prefab", false );
+		var physgunSlot = FindEmptySlot();
+		if ( physgunSlot >= 0 && Pickup( "weapons/physgun/physgun.prefab", physgunSlot, false ) )
+		{
+			if ( GetSlot( physgunSlot ) is { } physgun )
+			{
+				physgun.IsJobLocked = true;
+			}
+		}
+
+		var toolgunSlot = FindEmptySlot();
+		if ( toolgunSlot >= 0 && Pickup( "weapons/toolgun/toolgun.prefab", toolgunSlot, false ) )
+		{
+			if ( GetSlot( toolgunSlot ) is { } toolgun )
+			{
+				toolgun.IsJobLocked = true;
+			}
+		}
+
 		Pickup( "weapons/camera/camera.prefab", 8, false );
 	}
 
@@ -75,7 +91,16 @@ public sealed class PlayerInventory : Component, IPlayerEvent, ISaveEvents
 		}
 
 		if ( !HasWeapon<Toolgun>() )
-			Pickup( "weapons/toolgun/toolgun.prefab", false );
+		{
+			var toolgunSlot = FindEmptySlot();
+			if ( toolgunSlot >= 0 && Pickup( "weapons/toolgun/toolgun.prefab", toolgunSlot, false ) )
+			{
+				if ( GetSlot( toolgunSlot ) is { } toolgunItem )
+				{
+					toolgunItem.IsJobLocked = true;
+				}
+			}
+		}
 
 		var toolgun = GetWeapon<Toolgun>();
 		if ( !toolgun.IsValid() ) return;
@@ -268,6 +293,7 @@ public sealed class PlayerInventory : Component, IPlayerEvent, ISaveEvents
 
 		if ( !weapon.IsValid() ) return false;
 		if ( weapon.Owner != Player ) return false;
+		if ( weapon.IsJobLocked ) return false;
 
 		var dropPosition = Player.EyeTransform.Position + Player.EyeTransform.Forward * 48f;
 		var dropVelocity = Player.EyeTransform.Forward * 200f + Vector3.Up * 100f;
@@ -404,8 +430,10 @@ public sealed class PlayerInventory : Component, IPlayerEvent, ISaveEvents
 
 		var fromWeapon = GetSlot( fromSlot );
 		if ( !fromWeapon.IsValid() ) return;
+		if ( fromWeapon.IsJobLocked ) return;
 
 		var toWeapon = GetSlot( toSlot );
+		if ( toWeapon.IsValid() && toWeapon.IsJobLocked ) return;
 
 		fromWeapon.InventorySlot = toSlot;
 		if ( toWeapon.IsValid() )
@@ -520,6 +548,7 @@ public sealed class PlayerInventory : Component, IPlayerEvent, ISaveEvents
 	{
 		if ( !weapon.IsValid() ) return;
 		if ( weapon.Owner != Player ) return;
+		if ( weapon.IsJobLocked ) return;
 
 		if ( ActiveWeapon == weapon )
 			SwitchWeapon( null, true );
@@ -773,22 +802,44 @@ public sealed class PlayerInventory : Component, IPlayerEvent, ISaveEvents
 
 	private async Task OnSpawnedAsync()
 	{
-		if ( Player.IsLocalPlayer )
-		{
-			var json = LocalData.Get<string>( "hotbar" );
-			if ( !string.IsNullOrEmpty( json ) )
-			{
-				await EnsureMountedAsync( json );
-				GiveLoadoutWeapons( json );
-				return;
-			}
-		}
-		else
-		{
-			RequestClientLoadout();
-		}
+		await Player.ApplyCurrentJobAfterSpawnAsync();
+	}
+
+	public async Task ApplyJobLoadoutAsync( IReadOnlyList<string> startingItems )
+	{
+		if ( !Networking.IsHost )
+			return;
+
+		foreach ( var weapon in Weapons.ToList() )
+			weapon.DestroyGameObject();
+
+		await Task.Yield();
 
 		GiveDefaultWeapons();
+
+		foreach ( var prefabPath in startingItems?.Distinct( StringComparer.OrdinalIgnoreCase ) ?? [] )
+		{
+			if ( string.IsNullOrWhiteSpace( prefabPath ) )
+				continue;
+
+			var slot = FindEmptySlot();
+			if ( slot < 0 )
+				continue;
+
+			if ( !Pickup( prefabPath, slot, false ) )
+				continue;
+
+			if ( GetSlot( slot ) is { } jobWeapon )
+			{
+				jobWeapon.IsJobLocked = true;
+			}
+		}
+
+		var best = GetBestWeapon();
+		if ( best.IsValid() )
+			SwitchWeapon( best );
+
+		SaveLoadout();
 	}
 
 	void IPlayerEvent.OnDied( IPlayerEvent.DiedParams args )
