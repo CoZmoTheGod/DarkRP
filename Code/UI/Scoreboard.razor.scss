@@ -244,6 +244,39 @@ Scoreboard {
 		color: $menu-accent;
 	}
 
+	.money-drop-wrap {
+		width: 100%;
+		padding-top: 12px;
+		justify-content: center;
+	}
+
+	.money-drop-panel {
+		width: 100%;
+		max-width: 250px;
+		flex-direction: column;
+		align-items: center;
+		gap: 6px;
+	}
+
+	.money-drop-label {
+		font-size: 12px;
+		font-weight: 700;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		color: $menu-text;
+	}
+
+	.money-drop-controls {
+		flex-direction: row;
+		align-items: center;
+		gap: 8px;
+		width: 100%;
+
+		.money-drop-input {
+			flex-grow: 1;
+		}
+	}
+
 	.table,
 	.jobs-list {
 		width: 100%;

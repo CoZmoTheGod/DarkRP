@@ -42,12 +42,12 @@
 
                                         <div class="info-row">
                                             <label class="key">Current Job</label>
-                                            <label class="value">Citizen</label>
+                                            <label class="value">@LocalPlayerJob</label>
                                         </div>
 
                                         <div class="info-row">
                                             <label class="key">Wallet</label>
-                                            <label class="value">@FormatCurrency( 2500 )</label>
+                                            <label class="value">@FormatCurrency( LocalPlayerMoney )</label>
                                         </div>
 
                                         <div class="info-row">
@@ -58,6 +58,25 @@
                                         <div class="info-row">
                                             <label class="key">Server</label>
                                             <label class="value">@SessionType</label>
+                                        </div>
+
+                                        <div class="money-drop-wrap">
+                                            <div class="money-drop-panel">
+                                                <label class="money-drop-label">Drop Money</label>
+                                                <div class="money-drop-controls">
+                                                    <MoneyDropEntry @ref="DropMoneyEntry"
+                                                                    class="menu-input money-drop-input"
+                                                                    Placeholder="Amount"
+                                                                    Value:bind=@_dropMoneyValue
+                                                                    OnTabPressed="@CloseFromDropEntry"
+                                                                    @onsubmit="@DropMoney" />
+                                                    <Button Text="Drop"
+                                                            Icon="$"
+                                                            class="menu-action primary"
+                                                            Disabled="@(!CanDropMoney)"
+                                                            @onclick="@DropMoney" />
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
 
@@ -346,8 +365,15 @@
     ScoreboardPage? _hoveredPage;
     string _mapTitle = null;
     string _selectedShopSection = "Entities";
+    string _dropMoneyValue = "";
+    bool _isOpen;
+    MoneyDropEntry DropMoneyEntry = default;
 
     int PlayerCount => Scene.GetAll<PlayerData>().Count();
+    Player LocalPlayer => Player.FindLocalPlayer();
+    int LocalPlayerMoney => LocalPlayer?.Money ?? 0;
+    string LocalPlayerJob => string.IsNullOrWhiteSpace( LocalPlayer?.JobTitle ) ? "Citizen" : LocalPlayer.JobTitle;
+    bool CanDropMoney => TryGetDropMoneyAmount( out var amount ) && LocalPlayer?.CanAfford( amount ) == true;
 
     string LocalPlayerName
         => Scene.GetAll<PlayerData>().FirstOrDefault( x => x.IsMe )?.DisplayName ?? "Current Player";
@@ -390,6 +416,39 @@
 
     string FormatCurrency( int amount ) => $"${amount:n0}";
 
+    bool TryGetDropMoneyAmount( out int amount )
+    {
+        return int.TryParse( _dropMoneyValue, out amount ) && amount > 0;
+    }
+
+    void DropMoney()
+    {
+        if ( !TryGetDropMoneyAmount( out var amount ) )
+            return;
+
+        LocalPlayer?.RequestDropMoney( amount );
+        _dropMoneyValue = "";
+        DropMoneyEntry?.Blur();
+    }
+
+    void SetOpen( bool open )
+    {
+        if ( _isOpen == open )
+            return;
+
+        _isOpen = open;
+
+        if ( !open )
+        {
+            DropMoneyEntry?.Blur();
+        }
+    }
+
+    void CloseFromDropEntry()
+    {
+        SetOpen( false );
+    }
+
     async void FetchMap()
     {
         var ident = Networking.MapName;
@@ -403,15 +462,24 @@
 
     protected override void OnUpdate()
     {
+        Panel.AcceptsFocus = false;
+        var dropMoneyHasFocus = DropMoneyEntry?.HasFocus ?? false;
+
         var host = Game.ActiveScene.Get<SpawnMenuHost>();
         if ( host?.Panel?.HasClass( "open" ) ?? false )
         {
+            SetOpen( false );
             Input.Clear( "Score" );
         }
 
-        SetClass( "visible", Input.Down( "Score" ) );
+        if ( (Input.Pressed( "Score" ) || Input.Keyboard.Pressed( "Tab" )) && !dropMoneyHasFocus )
+        {
+            SetOpen( !_isOpen );
+        }
+
+        SetClass( "visible", _isOpen );
     }
 
     protected override int BuildHash()
-        => System.HashCode.Combine( RealTime.Now.CeilToInt(), _currentPage, _selectedShopSection );
+        => System.HashCode.Combine( PlayerCount, LocalPlayerMoney, LocalPlayerJob, _currentPage, _selectedShopSection, _dropMoneyValue );
 }

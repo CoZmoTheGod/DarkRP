@@ -1,3 +1,5 @@
+using Sandbox.UI;
+
 public sealed partial class Player
 {
 	[Property, Sync( SyncFlags.FromHost )]
@@ -42,5 +44,30 @@ public sealed partial class Player
 			return;
 
 		JobTitle = string.IsNullOrWhiteSpace( title ) ? "Citizen" : title.Trim();
+	}
+
+	[Rpc.Host]
+	public void RequestDropMoney( int amount )
+	{
+		if ( Rpc.Caller != Network.Owner )
+			return;
+
+		if ( amount <= 0 )
+		{
+			Notices.SendNotice( Network.Owner, "block", Color.Red, "Enter a valid amount to drop.", 3 );
+			return;
+		}
+
+		if ( !TryTakeMoney( amount ) )
+		{
+			Notices.SendNotice( Network.Owner, "block", Color.Red, "You don't have enough money.", 3 );
+			return;
+		}
+
+		if ( MoneyStack.TrySpawn( this, amount ) )
+			return;
+
+		GiveMoney( amount );
+		Notices.SendNotice( Network.Owner, "block", Color.Red, "Unable to drop money right now.", 3 );
 	}
 }
