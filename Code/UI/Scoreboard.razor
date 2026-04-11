@@ -230,6 +230,14 @@
                                                             Disabled="@(!CanBuyWeapon( item ))"
                                                             @onclick="@(() => BuyWeapon( item ))" />
                                                 }
+                                                else if ( !string.IsNullOrWhiteSpace( item.ShipmentWeaponPrefabPath ) )
+                                                {
+                                                    <label class="shop-meta-item">@item.ShipmentCount x weapons</label>
+                                                    <Button Text="Buy"
+                                                            class="menu-action primary shop-buy"
+                                                            Disabled="@(!CanBuyShipment( item ))"
+                                                            @onclick="@(() => BuyShipment( item ))" />
+                                                }
                                                 else
                                                 {
                                                     <label class="placeholder-tag">Placeholder</label>
@@ -426,13 +434,22 @@
 
     sealed class ShopItem
     {
-        public ShopItem( string name, int price, string description, string printerDefinitionPath = null, string weaponPrefabPath = null )
+        public ShopItem(
+            string name,
+            int price,
+            string description,
+            string printerDefinitionPath = null,
+            string weaponPrefabPath = null,
+            string shipmentWeaponPrefabPath = null,
+            int shipmentCount = 0 )
         {
             Name = name;
             Price = price;
             Description = description;
             PrinterDefinitionPath = printerDefinitionPath;
             WeaponPrefabPath = weaponPrefabPath;
+            ShipmentWeaponPrefabPath = shipmentWeaponPrefabPath;
+            ShipmentCount = shipmentCount;
         }
 
         public string Name { get; }
@@ -440,12 +457,14 @@
         public string Description { get; }
         public string PrinterDefinitionPath { get; }
         public string WeaponPrefabPath { get; }
+        public string ShipmentWeaponPrefabPath { get; }
+        public int ShipmentCount { get; }
     }
 
     static readonly QuickAction[] QuickActions =
     {
         new QuickAction( "Change Job", "Use the Jobs tab to switch roles, uniforms, and starting gear." ),
-        new QuickAction( "Open Shop", "Use the Shop tab to buy printers and individual weapons." ),
+        new QuickAction( "Open Shop", "Use the Shop tab to buy printers, weapons, and shipments." ),
         new QuickAction( "Request License", "Reserved slot for mayor and police interactions." ),
         new QuickAction( "View Laws", "Reserved slot for city laws and server rules." )
     };
@@ -487,23 +506,31 @@
 
     IEnumerable<ShopItem> GetVisibleShopItems()
     {
-        if ( CurrentShopSection.Title != "Weapons" )
-            return CurrentShopSection.Items;
-
-        var isGunDealer = string.Equals(
-            LocalPlayer?.JobDefinitionPath,
-            WeaponShopCatalog.GunDealerJobDefinitionPath,
-            StringComparison.OrdinalIgnoreCase
-        );
-
-        return CurrentShopSection.Items.Where( item =>
+        if ( CurrentShopSection.Title == "Weapons" )
         {
-            if ( string.IsNullOrWhiteSpace( item.WeaponPrefabPath ) )
-                return true;
+            return CurrentShopSection.Items.Where( item =>
+            {
+                if ( string.IsNullOrWhiteSpace( item.WeaponPrefabPath ) )
+                    return true;
 
-            var definition = WeaponShopCatalog.Get( item.WeaponPrefabPath );
-            return definition is not { GunDealerOnly: true } || isGunDealer;
-        } );
+                var definition = WeaponShopCatalog.Get( item.WeaponPrefabPath );
+                return WeaponShopCatalog.ShouldShowInShop( LocalPlayer, definition );
+            } );
+        }
+
+        if ( CurrentShopSection.Title == "Shipments" )
+        {
+            return CurrentShopSection.Items.Where( item =>
+            {
+                if ( string.IsNullOrWhiteSpace( item.ShipmentWeaponPrefabPath ) )
+                    return true;
+
+                var definition = WeaponShipmentCatalog.Get( item.ShipmentWeaponPrefabPath );
+                return WeaponShipmentCatalog.ShouldShowInShop( LocalPlayer, definition );
+            } );
+        }
+
+        return CurrentShopSection.Items;
     }
 
     protected override void OnTreeFirstBuilt()
@@ -625,6 +652,13 @@
             && WeaponShopCatalog.CanPlayerBuy( LocalPlayer, item.WeaponPrefabPath, out _ );
     }
 
+    bool CanBuyShipment( ShopItem item )
+    {
+        return !string.IsNullOrWhiteSpace( item.ShipmentWeaponPrefabPath )
+            && LocalPlayer?.CanAfford( item.Price ) == true
+            && WeaponShipmentCatalog.CanPlayerBuy( LocalPlayer, item.ShipmentWeaponPrefabPath, out _ );
+    }
+
     string GetPrinterRateText( ShopItem item )
     {
         if ( string.IsNullOrWhiteSpace( item.PrinterDefinitionPath ) )
@@ -653,6 +687,14 @@
         LocalPlayer?.RequestBuyWeapon( item.WeaponPrefabPath );
     }
 
+    void BuyShipment( ShopItem item )
+    {
+        if ( string.IsNullOrWhiteSpace( item.ShipmentWeaponPrefabPath ) )
+            return;
+
+        LocalPlayer?.RequestBuyWeaponShipment( item.ShipmentWeaponPrefabPath );
+    }
+
     ShopSection[] BuildShopSections()
     {
         return
@@ -669,6 +711,18 @@
                 "Sandbox weapons available for individual purchase.",
                 WeaponShopCatalog.GetAll()
                     .Select( x => new ShopItem( x.Title, x.Price, x.Description, weaponPrefabPath: x.PrefabPath ) )
+                    .ToArray()
+            ),
+            new ShopSection(
+                "Shipments",
+                "Buy crate shipments that dispense 10 pickup-ready weapons.",
+                WeaponShipmentCatalog.GetAll()
+                    .Select( x => new ShopItem(
+                        x.Title,
+                        x.Price,
+                        x.Description,
+                        shipmentWeaponPrefabPath: x.WeaponPrefabPath,
+                        shipmentCount: x.WeaponsPerShipment ) )
                     .ToArray()
             )
         ];

@@ -56,6 +56,14 @@ public sealed class DroppedWeapon : Component, Component.IPressable, PlayerContr
 		var weapon = GetComponent<BaseCarryable>();
 		if ( !weapon.IsValid() ) return;
 
+		// seems to fix missing audio on shipment weapons
+		var prefabSource = weapon.GameObject.PrefabInstanceSource;
+		if ( !string.IsNullOrWhiteSpace( prefabSource ) && inventory.Pickup( prefabSource ) )
+		{
+			weapon.DestroyGameObject();
+			return;
+		}
+
 		Enabled = false;
 
 		inventory.Take( weapon, true );
