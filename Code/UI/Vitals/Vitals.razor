@@ -58,7 +58,7 @@
 
     int HealthPercent => (int)(Player.Health / Math.Max( Player.MaxHealth, 1.0f ) * 100);
     int ArmourPercent => (int)(Player.Armour / Math.Max( Player.MaxArmour, 1.0f ) * 100);
-    string MoneyDisplay => $"{Player.Money:n0}";
+    string MoneyDisplay => MoneyFormatter.FormatCompact( Player.Money );
     string JobTitle => string.IsNullOrWhiteSpace( Player.JobTitle ) ? "Citizen" : Player.JobTitle;
 
     bool IsSpawnMenuOpen()
