@@ -23,6 +23,21 @@ public sealed partial class Player
 		return _doorPurchaseHoldProgress;
 	}
 
+	void HandleDoorUseInput()
+	{
+		if ( !IsLocalPlayer || !Input.Pressed( "use" ) )
+			return;
+
+		if ( !TryGetLookedRoleplayDoor( out var roleplayDoor ) )
+			return;
+
+		if ( roleplayDoor.CanBePurchased )
+			return;
+
+		RequestUseLookedDoor();
+		Input.Clear( "use" );
+	}
+
 	[ConCmd( "rp_door_buy", ConVarFlags.Server, Help = "Buy the roleplay door you are looking at." )]
 	public static void BuyLookedDoorCommand( Connection source )
 	{
@@ -220,6 +235,21 @@ public sealed partial class Player
 		}
 
 		Notices.SendNotice( Network.Owner, "block", Color.Red, error, 3 );
+	}
+
+	[Rpc.Host]
+	void RequestUseLookedDoor()
+	{
+		if ( Rpc.Caller != Network.Owner )
+			return;
+
+		if ( !TryGetLookedRoleplayDoor( out var roleplayDoor ) )
+			return;
+
+		if ( !roleplayDoor.CanUseDoor( this ) )
+			return;
+
+		roleplayDoor.Door.ToggleFromServer( GameObject );
 	}
 
 	[Rpc.Host]

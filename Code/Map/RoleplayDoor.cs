@@ -50,10 +50,9 @@ public sealed class RoleplayDoor : Component
 		if ( !CanPress( e, state ) )
 			return false;
 
-		var player = GetPlayer( e );
 		if ( IsGovernment )
 		{
-			if ( !CanUseDoor( player ) || !e.Source.IsValid() )
+			if ( !e.Source.IsValid() )
 				return false;
 
 			Door.Toggle( e.Source.GameObject );
@@ -131,7 +130,7 @@ public sealed class RoleplayDoor : Component
 
 		if ( Door.State is Door.DoorState.Open or Door.DoorState.Opening )
 		{
-			Door.Close();
+			Door.CloseFromServer( seller.GameObject );
 		}
 
 		Door.IsLocked = false;
@@ -177,7 +176,7 @@ public sealed class RoleplayDoor : Component
 
 		if ( locked && Door.State is Door.DoorState.Open or Door.DoorState.Opening )
 		{
-			Door.Close();
+			Door.CloseFromServer( actor.GameObject );
 		}
 
 		Door.IsLocked = locked;

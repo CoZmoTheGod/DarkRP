@@ -168,6 +168,14 @@ public sealed class Door : Component, Component.IPressable
 	[ActionGraphNode( "sandbox.door.open" ), Pure]
 	public void Open( GameObject presser )
 	{
+		OpenFromServer( presser );
+	}
+
+	public void OpenFromServer( GameObject presser )
+	{
+		if ( !Networking.IsHost )
+			return;
+
 		if ( !CanUseRoleplayDoor( presser ) )
 			return;
 
@@ -176,7 +184,7 @@ public sealed class Door : Component, Component.IPressable
 			return;
 		}
 
-		if ( IsLocked )
+		if ( IsLocked && ShouldBlockLockedOpen( presser ) )
 		{
 			if ( LockedSound is not null )
 				PlaySound( LockedSound );
@@ -205,7 +213,15 @@ public sealed class Door : Component, Component.IPressable
 	[ActionGraphNode( "sandbox.door.close" ), Pure]
 	public void Close()
 	{
-		if ( !CanUseRoleplayDoor( null ) )
+		CloseFromServer( null );
+	}
+
+	public void CloseFromServer( GameObject presser )
+	{
+		if ( !Networking.IsHost )
+			return;
+
+		if ( !CanUseRoleplayDoor( presser ) )
 			return;
 
 		// Don't do anything if already closed or closing
@@ -226,17 +242,34 @@ public sealed class Door : Component, Component.IPressable
 	[ActionGraphNode( "sandbox.door.toggle" ), Pure]
 	public void Toggle( GameObject presser )
 	{
+		ToggleFromServer( presser );
+	}
+
+	public void ToggleFromServer( GameObject presser )
+	{
+		if ( !Networking.IsHost )
+			return;
+
 		if ( !CanUseRoleplayDoor( presser ) )
 			return;
 
 		if ( State is DoorState.Closed )
 		{
-			Open( presser );
+			OpenFromServer( presser );
 		}
 		else if ( State is DoorState.Open )
 		{
-			Close();
+			CloseFromServer( presser );
 		}
+	}
+
+	bool ShouldBlockLockedOpen( GameObject presser )
+	{
+		var roleplayDoor = GameObject.GetComponent<global::RoleplayDoor>();
+		if ( !roleplayDoor.IsValid() )
+			return true;
+
+		return !CanUseRoleplayDoor( presser );
 	}
 
 	bool CanUseRoleplayDoor( GameObject presser )
