@@ -9,6 +9,7 @@
   "Order": 20,
   "StartingItems": [
     "weapons/glock/glock.prefab",
+    "weapons/arreststick/arrest_stick.prefab",
     "weapons/shotgun/shotgun.prefab"
   ],
   "Clothing": [

@@ -9,12 +9,21 @@
 		var steamId = Entry.Connection.SteamId;
 		bool isMuted = SandboxVoice.IsMuted( steamId );
 		var role = GetEntryAdminRole();
+		var targetPlayer = GetEntryPlayer();
 
 		<img class="avatar" src="avatar:@steamId" />
 		<div class="name">
 			<div class="identity">
 				<div class="display-name">@Entry.DisplayName</div>
 				<label class="player-job" style="@GetJobAccentStyle()">@GetJobTitle()</label>
+				@if ( targetPlayer?.IsWanted == true )
+				{
+					<label class="row-role admin">Wanted</label>
+				}
+				@if ( targetPlayer?.IsArrested == true )
+				{
+					<label class="row-role none">Arrested</label>
+				}
 			</div>
 			@if ( role != AdminRole.None )
 			{
@@ -100,9 +109,37 @@
 				if ( targetRole != AdminRole.None )
 					menu.AddOption( "person_off", "Remove Staff", () => SetAdminRole( AdminRole.None ) );
 			}
+
+			if ( localPlayer?.CanIssueWantedStatus == true )
+			{
+				menu.AddSpacer();
+
+				if ( GetEntryPlayer()?.IsWanted == true )
+					menu.AddOption( "check_circle", "Clear Wanted", () => localPlayer.RequestSetWantedStatus( Entry.PlayerId, string.Empty, false ) );
+				else
+					menu.AddOption( "warning", "Mark Wanted", () => OpenWantedConfirm( Entry ) );
+			}
+
+			if ( localPlayer?.CanArrestPlayers == true && GetEntryPlayer()?.IsArrested == true )
+			{
+				menu.AddOption( "check_circle", "Unarrest", () => localPlayer.RequestReleaseArrestPlayer( Entry.PlayerId ) );
+			}
+
 		}
 
 		e.StopPropagation();
+	}
+
+	void OpenWantedConfirm( PlayerData entry )
+	{
+		var popup = new StringQueryPopup
+		{
+			Title = "Mark Wanted",
+			Prompt = $"Why is {entry.DisplayName} wanted?",
+			ConfirmLabel = "Confirm",
+			OnConfirm = x => Player.FindLocalPlayer()?.RequestSetWantedStatus( entry.PlayerId, x, true )
+		};
+		popup.Parent = FindPopupPanel();
 	}
 
 	void OpenKickConfirm( PlayerData entry )
@@ -135,6 +172,11 @@
 			return AdminRole.SuperAdmin;
 
 		return Player.For( Entry?.PlayerId ?? Guid.Empty )?.AdminRole ?? AdminRole.None;
+	}
+
+	Player GetEntryPlayer()
+	{
+		return Player.For( Entry?.PlayerId ?? Guid.Empty );
 	}
 
 	string GetRoleLabel( AdminRole role )
@@ -183,15 +225,17 @@
 
 	protected override int BuildHash()
 	{
-		return HashCode.Combine(
-			Entry?.PlayerId,
-			Entry?.DisplayName,
-			Entry?.JobDefinitionPath,
-			Entry?.JobTitle,
-			Entry?.Kills,
-			Entry?.Deaths,
-			Entry?.Ping,
-			(int)GetEntryAdminRole()
-		);
+		var hash = new HashCode();
+		hash.Add( Entry?.PlayerId );
+		hash.Add( Entry?.DisplayName );
+		hash.Add( Entry?.JobDefinitionPath );
+		hash.Add( Entry?.JobTitle );
+		hash.Add( Entry?.Kills );
+		hash.Add( Entry?.Deaths );
+		hash.Add( Entry?.Ping );
+		hash.Add( Entry?.IsWanted );
+		hash.Add( Entry?.IsArrested );
+		hash.Add( (int)GetEntryAdminRole() );
+		return hash.ToHashCode();
 	}
 }

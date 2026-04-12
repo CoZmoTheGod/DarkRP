@@ -38,6 +38,38 @@
         }
       ],
       "Children": []
+    },
+    {
+      "__guid": "1f5281c3-5b17-40f9-883e-6c4c97cb35f5",
+      "__version": 2,
+      "Flags": 0,
+      "Name": "Jail Point",
+      "Position": "-471.3741,0,0",
+      "Rotation": "0,0,0,1",
+      "Scale": "1,1,1",
+      "Tags": "",
+      "Enabled": true,
+      "NetworkMode": 2,
+      "NetworkFlags": 0,
+      "NetworkOrphaned": 0,
+      "NetworkTransmit": true,
+      "OwnerTransfer": 1,
+      "Components": [
+        {
+          "__type": "Sandbox.JailCellMarker",
+          "__guid": "36c4dc25-f6b7-465f-bb6d-f32d928cbb25",
+          "__enabled": true,
+          "Flags": 0,
+          "EnabledForArrests": true,
+          "OnComponentDestroy": null,
+          "OnComponentDisabled": null,
+          "OnComponentEnabled": null,
+          "OnComponentFixedUpdate": null,
+          "OnComponentStart": null,
+          "OnComponentUpdate": null
+        }
+      ],
+      "Children": []
     }
   ],
   "SceneProperties": {
@@ -59,13 +91,13 @@
       "CustomBounds": false
     },
     "GameObjectSystems": {
-      "Sandbox.MovieMaker.MovieRecorderSystem": {
-        "DisableClientRecording": false
-      },
       "Sandbox.Clutter.ClutterGridSystem": {
         "Storage": {
-          "$blob": "3c04697f-7021-4069-8b25-c4a54008de9e"
+          "$blob": "b2e351ee-35f9-4b24-b6d9-e4343c82d4b4"
         }
+      },
+      "Sandbox.MovieMaker.MovieRecorderSystem": {
+        "DisableClientRecording": false
       }
     }
   },

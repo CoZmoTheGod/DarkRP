@@ -10,7 +10,13 @@
 
 			<div class="avatar" style="background-image: url( avatar:@Player.SteamId )"></div>
 
-			<label class="name">@Player.DisplayName</label>
+			<div class="name-block">
+				<label class="name">@Player.DisplayName</label>
+				@if ( Player.IsWanted )
+				{
+					<label class="wanted-label">WANTED</label>
+				}
+			</div>
 			@if ( IsVoicePlaying )
 			{
 				<div class="voice">volume_up</div>
@@ -44,5 +50,5 @@
     /// <summary>
     /// Rebuild if the owner connection changes
     /// </summary>
-    protected override int BuildHash() => System.HashCode.Combine( Network.Owner, Player?.DisplayName, IsVoicePlaying, Player.FindLocalPlayer()?.WantsHideHud ?? false );
+    protected override int BuildHash() => System.HashCode.Combine( Network.Owner, Player?.DisplayName, IsVoicePlaying, Player.FindLocalPlayer()?.WantsHideHud ?? false, Player?.IsWanted );
 }

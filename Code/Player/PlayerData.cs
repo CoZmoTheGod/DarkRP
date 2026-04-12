@@ -91,6 +91,7 @@ public sealed partial class PlayerData : Component, ISaveEvents
 	protected override void OnUpdate()
 	{
 		if ( !Networking.IsHost ) return;
+		TickLawState();
 		if ( !_needsRespawn ) return;
 		if ( _timeSinceDied < 4f ) return;
 

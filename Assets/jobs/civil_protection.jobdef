@@ -9,7 +9,7 @@
   "Order": 10,
   "StartingItems": [
     "weapons/glock/glock.prefab",
-    "weapons/crowbar/crowbar.prefab"
+    "weapons/arreststick/arrest_stick.prefab"
   ],
   "Clothing": [
     "models/citizen_clothes/hat/police_hat/police_hat.clothing",

@@ -268,6 +268,9 @@ public sealed partial class Player : Component, Component.IDamageable, PlayerCon
 			Controller.UseInputControls = true;
 		}
 
+		if ( HandleArrestControl() )
+			return;
+
 		if ( Input.Pressed( "die" ) )
 		{
 			KillSelf();
