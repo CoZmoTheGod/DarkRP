@@ -119,7 +119,7 @@ public sealed partial class GameManager : GameObjectSystem<GameManager>, Compone
 	/// <summary>
 	/// Find the most appropriate place to respawn
 	/// </summary>
-	Transform FindSpawnLocation()
+	public Transform FindSpawnLocation()
 	{
 		//
 		// If we have any SpawnPoint components in the scene, then use those

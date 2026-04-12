@@ -94,6 +94,12 @@ public sealed partial class Player
 			return;
 		}
 
+		if ( WorldPosition.Distance( target.WorldPosition ) > ArrestDistance )
+		{
+			Notices.SendNotice( Network.Owner, "block", Color.Red, "Get closer to release that player.", 3 );
+			return;
+		}
+
 		target.ReleaseFromArrest();
 
 		if ( Network.Owner is { } actorConnection )
@@ -183,6 +189,8 @@ public sealed partial class Player
 		PlayerData.WantedReason = null;
 		GameObject.Tags.Remove( "wanted" );
 
+		ApplyPrisonerClothingForCurrentArrest();
+
 		var inventory = GetComponent<PlayerInventory>();
 		if ( inventory.IsValid() )
 		{
@@ -199,7 +207,7 @@ public sealed partial class Player
 
 		if ( TryFindArrestLocation( out var arrestLocation ) )
 		{
-			ApplyArrestTeleport( arrestLocation );
+			ApplyPlayerTeleport( arrestLocation );
 
 			if ( officer?.Network.Owner is { } officerSuccessConnection )
 			{
@@ -224,6 +232,16 @@ public sealed partial class Player
 		Scene.Get<Chat>()?.AddSystemText( $"{DisplayName} was arrested by {officer?.DisplayName ?? "the law"}.", "⛓" );
 	}
 
+	async void ApplyPrisonerClothingForCurrentArrest()
+	{
+		await ApplyPrisonerClothingAsync();
+
+		if ( !IsArrested )
+		{
+			await RestoreJobClothingAsync();
+		}
+	}
+
 	public void ReleaseFromArrest()
 	{
 		if ( !Networking.IsHost || !PlayerData.IsValid() || !PlayerData.IsArrested )
@@ -231,6 +249,18 @@ public sealed partial class Player
 
 		PlayerData.IsArrested = false;
 		PlayerData.ArrestTimeRemaining = 0.0f;
+
+		_ = RestoreJobClothingAsync();
+
+		if ( preArrestRunSpeed.HasValue && Controller.IsValid() )
+		{
+			Controller.RunSpeed = preArrestRunSpeed.Value;
+		}
+
+		preArrestRunSpeed = null;
+
+		var releaseLocation = GameManager.Current?.FindSpawnLocation().WithScale( 1.0f ) ?? WorldTransform.WithScale( 1.0f );
+		ApplyPlayerTeleport( releaseLocation );
 
 		if ( Network.Owner is { } targetConnection )
 		{
@@ -253,20 +283,20 @@ public sealed partial class Player
 		return true;
 	}
 
-	async void ApplyArrestTeleport( Transform arrestLocation )
+	async void ApplyPlayerTeleport( Transform targetLocation )
 	{
 		if ( !Networking.IsHost || !GameObject.IsValid() )
 			return;
 
-		var eyeAngles = arrestLocation.Rotation.Angles();
+		var eyeAngles = targetLocation.Rotation.Angles();
 
 		for ( var i = 0; i < 4; i++ )
 		{
 			if ( !GameObject.IsValid() )
 				return;
 
-			WorldPosition = arrestLocation.Position;
-			WorldRotation = arrestLocation.Rotation;
+			WorldPosition = targetLocation.Position;
+			WorldRotation = targetLocation.Rotation;
 			GameObject.Transform.ClearInterpolation();
 
 			if ( Controller.IsValid() )
@@ -278,7 +308,7 @@ public sealed partial class Player
 				}
 			}
 
-			ForceArrestTeleportOwner( arrestLocation.Position, eyeAngles );
+			ForceTeleportOwner( targetLocation.Position, eyeAngles );
 
 			if ( i < 3 )
 				await Task.Delay( 50 );
@@ -286,7 +316,7 @@ public sealed partial class Player
 	}
 
 	[Rpc.Owner( NetFlags.HostOnly | NetFlags.Reliable )]
-	void ForceArrestTeleportOwner( Vector3 position, Angles eyeAngles )
+	void ForceTeleportOwner( Vector3 position, Angles eyeAngles )
 	{
 		if ( !GameObject.IsValid() )
 			return;

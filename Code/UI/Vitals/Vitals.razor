@@ -7,6 +7,14 @@
     return;
 
 <root>
+    @if ( Player.IsArrested )
+    {
+        <div class="arrest-status hud-panel">
+            <label class="title">Arrested</label>
+            <label class="timer">Released in @ArrestSecondsRemaining seconds</label>
+        </div>
+    }
+
     <div class="player-card hud-panel">
         <div class="identity">
             <label class="name">@Player.DisplayName</label>
@@ -58,6 +66,7 @@
 
     int HealthPercent => (int)(Player.Health / Math.Max( Player.MaxHealth, 1.0f ) * 100);
     int ArmourPercent => (int)(Player.Armour / Math.Max( Player.MaxArmour, 1.0f ) * 100);
+    int ArrestSecondsRemaining => Math.Max( 0, (int)MathF.Ceiling( Player.ArrestTimeRemaining ) );
     string MoneyDisplay => MoneyFormatter.FormatCompact( Player.Money );
     string JobTitle => string.IsNullOrWhiteSpace( Player.JobTitle ) ? "Citizen" : Player.JobTitle;
 
@@ -76,6 +85,7 @@
     {
         if ( !Player.IsValid() || Player.WantsHideHud ) return 0;
 
-        return System.HashCode.Combine( Player.DisplayName, Player.Health, Player.Armour, Player.Money, Player.JobTitle, Weapon?.ClipContents, Weapon?.ReserveAmmo );
+        var arrestHash = System.HashCode.Combine( Player.IsArrested, ArrestSecondsRemaining );
+        return System.HashCode.Combine( Player.DisplayName, Player.Health, Player.Armour, Player.Money, Player.JobTitle, arrestHash, Weapon?.ClipContents, Weapon?.ReserveAmmo );
     }
 }

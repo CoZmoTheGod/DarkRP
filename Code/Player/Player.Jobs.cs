@@ -2,6 +2,9 @@ using Sandbox.UI;
 
 public sealed partial class Player
 {
+	const string PrisonerJumpsuitClothingPath = "models/citizen_clothes/shirt/jumpsuit/prison_jumpsuit.clothing";
+	const string PrisonerShoesClothingPath = "models/citizen_clothes/shoes/boots/black_boots.clothing";
+
 	sealed class BodyAppearanceSnapshot
 	{
 		public Model Model { get; init; }
@@ -97,6 +100,21 @@ public sealed partial class Player
 
 	async Task ApplyJobClothingAsync( JobDefinition definition )
 	{
+		await ApplyClothingAsync( definition?.Clothing );
+	}
+
+	async Task ApplyPrisonerClothingAsync()
+	{
+		await ApplyClothingAsync( [PrisonerJumpsuitClothingPath, PrisonerShoesClothingPath] );
+	}
+
+	async Task RestoreJobClothingAsync()
+	{
+		await ApplyJobClothingAsync( CurrentJobDefinition );
+	}
+
+	async Task ApplyClothingAsync( IEnumerable<string> clothingPaths )
+	{
 		if ( !Body.IsValid() )
 			return;
 
@@ -112,7 +130,7 @@ public sealed partial class Player
 
 		dresser.Clothing.Clear();
 
-		foreach ( var clothingPath in definition.Clothing ?? [] )
+		foreach ( var clothingPath in clothingPaths ?? [] )
 		{
 			if ( string.IsNullOrWhiteSpace( clothingPath ) )
 				continue;
