@@ -280,11 +280,23 @@ public sealed class Door : Component, Component.IPressable
 
 		var caller = global::Player.FindForConnection( Rpc.Caller );
 		if ( caller.IsValid() )
+		{
+			// Check if player has lockpick bypass for this door
+			if ( caller.HasDoorLockpickBypass( roleplayDoor ) )
+				return true;
+
 			return roleplayDoor.CanUseDoor( caller );
+		}
 
 		var player = presser.IsValid() ? presser.Root.GetComponent<global::Player>() : null;
 		if ( player.IsValid() )
+		{
+			// Check if player has lockpick bypass for this door
+			if ( player.HasDoorLockpickBypass( roleplayDoor ) )
+				return true;
+
 			return roleplayDoor.CanUseDoor( player );
+		}
 
 		return Rpc.Caller is null;
 	}

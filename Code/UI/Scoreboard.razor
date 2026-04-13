@@ -527,7 +527,7 @@
     bool CanSubmitAdminSteamId => TryGetAdminSteamId( out _ );
     AdminRole LocalPlayerAdminRole => LocalPlayer?.HasSuperAdminAccess == true ? AdminRole.SuperAdmin : LocalPlayer?.AdminRole ?? AdminRole.None;
     IReadOnlyList<MoneyPrinterDefinition> PrinterDefinitions => MoneyPrinterDefinition.GetAll();
-    IReadOnlyList<JobDefinition> JobDefinitions => JobDefinition.GetAll();
+    IReadOnlyList<JobDefinition> JobDefinitions => BuildJobDefinitions();
     ShopSection[] ShopSections => BuildShopSections();
     NavigationItem[] NavigationItems => BuildNavigationItems();
 
@@ -797,6 +797,24 @@
                     .ToArray()
             )
         ];
+    }
+
+    IReadOnlyList<JobDefinition> BuildJobDefinitions()
+    {
+        var jobs = JobDefinition.GetAll().ToList();
+
+        var thief = JobDefinition.Get( Player.ThiefJobDefinitionPath );
+        if ( thief is not null && !jobs.Any( x => string.Equals( x.ResourcePath, thief.ResourcePath, StringComparison.OrdinalIgnoreCase ) ) )
+        {
+            jobs.Add( thief );
+            jobs = jobs
+                .OrderBy( x => x.Order )
+                .ThenBy( x => x.Category )
+                .ThenBy( x => x.Title )
+                .ToList();
+        }
+
+        return jobs;
     }
 
     IEnumerable<PlayerData> GetPlayers()
