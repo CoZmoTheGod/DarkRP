@@ -316,16 +316,7 @@ public sealed class RoleplayDoor : Component
 		{
 			if ( player.IsValid() && player.IsThief && CanLockpickGovernmentDoor && Door.IsLocked )
 			{
-				var progress = player.GetDoorLockpickProgress( this );
-				var description = "Hold attack";
-
-				if ( progress > 0.0f )
-				{
-					var percent = (int)MathF.Round( progress * 100.0f );
-					description = $"{BuildProgressBar( progress )} {percent}%";
-				}
-
-				return new IPressable.Tooltip( "Lockpick", "key", description );
+				return new IPressable.Tooltip( "Lockpick", "key", "Hold attack" );
 			}
 
 			if ( CanAccessGovernmentDoor( player ) )
@@ -355,16 +346,7 @@ public sealed class RoleplayDoor : Component
 		{
 			if ( Door.IsLocked || player.IsDoorLockpickHolding && player.DoorLockpickTarget == this )
 			{
-				var progress = player.GetDoorLockpickProgress( this );
-				var description = "Hold attack";
-
-				if ( progress > 0.0f )
-				{
-					var percent = (int)MathF.Round( progress * 100.0f );
-					description = $"{BuildProgressBar( progress )} {percent}%";
-				}
-
-				return new IPressable.Tooltip( "Lockpick", "key", description );
+				return new IPressable.Tooltip( "Lockpick", "key", "Hold attack" );
 			}
 		}
 
@@ -408,6 +390,19 @@ public sealed class RoleplayDoor : Component
 
 		if ( !IsOwned )
 			return true;
+
+		return true;
+	}
+
+	public bool TryPlayLockpickAttemptSound( Player actor )
+	{
+		if ( !Networking.IsHost || !CanAttemptLockpick( actor ) )
+			return false;
+
+		if ( actor.IsValid() )
+		{
+			actor.PlayDoorLockpickAttemptSound();
+		}
 
 		return true;
 	}

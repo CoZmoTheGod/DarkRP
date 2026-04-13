@@ -4,7 +4,9 @@ public sealed partial class Player
 {
 	const float DoorCommandTraceDistance = 220.0f;
 	const float DoorPurchaseHoldDuration = 1.0f;
-	const float DoorLockpickHoldDuration = 4.0f;
+	const float DoorLockpickHoldDuration = 8.0f;
+	const float DoorLockpickAttemptSoundInterval = 2.0f;
+	const string DoorLockpickAttemptSoundEvent = "weapons/crowbar/sounds/crowbar.hit.sound";
 
 	RoleplayDoor _doorPurchaseTarget;
 	TimeSince _doorPurchaseHoldElapsed;
@@ -16,6 +18,7 @@ public sealed partial class Player
 	bool _isDoorLockpickHolding;
 	bool _hasTriggeredDoorLockpick;
 	float _doorLockpickHoldProgress;
+	TimeSince _timeSinceDoorLockpickAttemptSound;
 	RoleplayDoor _doorLockpickBypass;
 	TimeSince _doorLockpickBypassTime;
 
@@ -259,6 +262,7 @@ public sealed partial class Player
 
 		_isDoorLockpickHolding = true;
 		Input.Clear( "attack1" );
+		PlayDoorLockpickAttemptSoundIfReady();
 
 		if ( _hasTriggeredDoorLockpick )
 		{
@@ -284,6 +288,7 @@ public sealed partial class Player
 		_doorLockpickHoldProgress = 0.0f;
 		_hasTriggeredDoorLockpick = false;
 		_isDoorLockpickHolding = true;
+		_timeSinceDoorLockpickAttemptSound = DoorLockpickAttemptSoundInterval;
 	}
 
 	void ResetDoorLockpickHold()
@@ -292,6 +297,16 @@ public sealed partial class Player
 		_doorLockpickHoldProgress = 0.0f;
 		_hasTriggeredDoorLockpick = false;
 		_isDoorLockpickHolding = false;
+		_timeSinceDoorLockpickAttemptSound = 0;
+	}
+
+	void PlayDoorLockpickAttemptSoundIfReady()
+	{
+		if ( _timeSinceDoorLockpickAttemptSound < DoorLockpickAttemptSoundInterval )
+			return;
+
+		_timeSinceDoorLockpickAttemptSound = 0;
+		RequestPlayDoorLockpickAttemptSound();
 	}
 
 
@@ -459,6 +474,18 @@ public sealed partial class Player
 		TryLockpickLookedDoor();
 	}
 
+	[Rpc.Host]
+	void RequestPlayDoorLockpickAttemptSound()
+	{
+		if ( Rpc.Caller != Network.Owner )
+			return;
+
+		if ( !TryGetLookedRoleplayDoor( out var roleplayDoor ) )
+			return;
+
+		roleplayDoor.TryPlayLockpickAttemptSound( this );
+	}
+
 	bool TryGetLookedRoleplayDoor( out RoleplayDoor roleplayDoor )
 	{
 		roleplayDoor = null;
@@ -500,5 +527,18 @@ public sealed partial class Player
 			return;
 
 		Sound.Play( soundEvent );
+	}
+
+	[Rpc.Broadcast]
+	public void PlayDoorLockpickAttemptSound()
+	{
+		if ( Application.IsDedicatedServer )
+			return;
+
+		var sound = Sound.Play( DoorLockpickAttemptSoundEvent, WorldPosition );
+		if ( IsLocalPlayer && sound.IsValid() )
+		{
+			sound.SpacialBlend = 0;
+		}
 	}
 }
