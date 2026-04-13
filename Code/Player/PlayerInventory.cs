@@ -67,6 +67,15 @@ public sealed class PlayerInventory : Component, IPlayerEvent, ISaveEvents
 			}
 		}
 
+		var keySlot = FindEmptySlot();
+		if ( keySlot >= 0 && Pickup( "weapons/keys/keys.prefab", keySlot, false ) )
+		{
+			if ( GetSlot( keySlot ) is { } keys )
+			{
+				keys.IsJobLocked = true;
+			}
+		}
+
 		var physgunSlot = FindEmptySlot();
 		if ( physgunSlot >= 0 && Pickup( "weapons/physgun/physgun.prefab", physgunSlot, false ) )
 		{

@@ -297,7 +297,6 @@ public sealed partial class Player : Component, Component.IDamageable, PlayerCon
 
 		HandleDoorUseInput();
 		HandleDoorPurchaseInput();
-		HandleDoorLockInput();
 		HandleDoorSellInput();
 
 		GetComponent<PlayerInventory>()?.OnControl();

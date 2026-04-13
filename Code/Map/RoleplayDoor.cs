@@ -41,6 +41,14 @@ public sealed class RoleplayDoor : Component
 	public bool CanBePurchased => !IsGovernment && !IsOwned;
 	bool CanLockpickGovernmentDoor => AllowGovernmentLockpick || DefaultAllowGovernmentLockpick;
 
+	protected override void OnStart()
+	{
+		if ( Networking.IsHost && IsGovernment && Door.IsValid() )
+		{
+			Door.IsLocked = true;
+		}
+	}
+
 	public bool IsOwnedBy( Connection connection )
 	{
 		if ( connection is null )
@@ -301,7 +309,7 @@ public sealed class RoleplayDoor : Component
 	public IPressable.Tooltip BuildTooltip( Player player, Door.DoorState state )
 	{
 		var isOwner = player.IsValid() && IsOwnedBy( player.Network.Owner );
-		var title = state == Door.DoorState.Open ? "Close" : "Open";
+		var title = Door.IsLocked ? "Locked" : state == Door.DoorState.Open ? "Close" : "Open";
 		var icon = Door.IsLocked ? "lock" : "door_front";
 
 		if ( IsGovernment )
@@ -309,12 +317,12 @@ public sealed class RoleplayDoor : Component
 			if ( player.IsValid() && player.IsThief && CanLockpickGovernmentDoor && Door.IsLocked )
 			{
 				var progress = player.GetDoorLockpickProgress( this );
-				var description = "Government door - Hold attack to lockpick";
+				var description = "Hold attack";
 
 				if ( progress > 0.0f )
 				{
 					var percent = (int)MathF.Round( progress * 100.0f );
-					description = $"Government door - Hold attack to lockpick {BuildProgressBar( progress )} {percent}%";
+					description = $"{BuildProgressBar( progress )} {percent}%";
 				}
 
 				return new IPressable.Tooltip( "Lockpick", "key", description );
@@ -322,23 +330,22 @@ public sealed class RoleplayDoor : Component
 
 			if ( CanAccessGovernmentDoor( player ) )
 			{
-				var action = Door.IsLocked ? "unlock" : "lock";
-				return new IPressable.Tooltip( title, icon, $"Government door - Right click to {action}" );
+				return new IPressable.Tooltip( title, icon, "Use keys" );
 			}
 
-			return new IPressable.Tooltip( "Government Door", "lock", "Police, Police Chief and Mayor access only" );
+			return new IPressable.Tooltip( "Government Door", "lock", "Government only" );
 		}
 
 		if ( !IsOwned )
 		{
 			var price = Math.Max( 0, PurchasePrice );
 			var progress = player.IsValid() ? player.GetDoorPurchaseProgress( this ) : 0.0f;
-			var description = $"${price:n0} - Hold E to buy";
+			var description = $"E open, hold buy ${price:n0}";
 
 			if ( progress > 0.0f )
 			{
 				var percent = (int)MathF.Round( progress * 100.0f );
-				description = $"${price:n0} - Hold E to buy {BuildProgressBar( progress )} {percent}%";
+				description = $"{BuildProgressBar( progress )} {percent}%";
 			}
 
 			return new IPressable.Tooltip( "Buy Door", "$", description );
@@ -349,12 +356,12 @@ public sealed class RoleplayDoor : Component
 			if ( Door.IsLocked || player.IsDoorLockpickHolding && player.DoorLockpickTarget == this )
 			{
 				var progress = player.GetDoorLockpickProgress( this );
-				var description = "Owned door - Hold attack to lockpick";
+				var description = "Hold attack";
 
 				if ( progress > 0.0f )
 				{
 					var percent = (int)MathF.Round( progress * 100.0f );
-					description = $"Owned door - Hold attack to lockpick {BuildProgressBar( progress )} {percent}%";
+					description = $"{BuildProgressBar( progress )} {percent}%";
 				}
 
 				return new IPressable.Tooltip( "Lockpick", "key", description );
@@ -363,14 +370,13 @@ public sealed class RoleplayDoor : Component
 
 		if ( isOwner )
 		{
-			var action = Door.IsLocked ? "unlock" : "lock";
 			var sellPrice = Math.Max( 0, PurchasePrice );
-			return new IPressable.Tooltip( title, icon, $"Owned by you - Right click to {action}, R to sell for ${sellPrice:n0}" );
+			return new IPressable.Tooltip( title, icon, $"Use keys. R sell ${sellPrice:n0}" );
 		}
 
 		var ownerName = Owner?.DisplayName ?? "Unknown";
 		var lockState = Door.IsLocked ? "locked" : "unlocked";
-		return new IPressable.Tooltip( title, icon, $"Owned by {ownerName} ({lockState})" );
+		return new IPressable.Tooltip( title, icon, $"{ownerName} - {lockState}" );
 	}
 
 	public bool CanControlLock( Player player )
@@ -389,6 +395,9 @@ public sealed class RoleplayDoor : Component
 		if ( !player.IsValid() )
 			return false;
 
+		if ( Door.IsLocked )
+			return false;
+
 		if ( IsGovernment )
 		{
 			if ( CanAccessGovernmentDoor( player ) )
@@ -398,10 +407,7 @@ public sealed class RoleplayDoor : Component
 		}
 
 		if ( !IsOwned )
-			return false;
-
-		if ( Door.IsLocked )
-			return IsOwnedBy( player.Network.Owner );
+			return true;
 
 		return true;
 	}

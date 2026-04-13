@@ -59,16 +59,17 @@
         "__guid": "0c2c81fc-beb6-4df7-a04e-de6e3dbff7ae",
         "__enabled": true,
         "Flags": 0,
-        "LockSound": null,
+        "AllowGovernmentLockpick": true,
+        "IsGovernment": false,
+        "LockSound": "entities/door/sounds/door_lock.sound",
         "OnComponentDestroy": null,
         "OnComponentDisabled": null,
         "OnComponentEnabled": null,
         "OnComponentFixedUpdate": null,
         "OnComponentStart": null,
         "OnComponentUpdate": null,
-        "IsGovernment": false,
         "PurchasePrice": 500,
-        "UnlockSound": null
+        "UnlockSound": "entities/door/sounds/door_unlock.sound"
       },
       {
         "__type": "Sandbox.ModelRenderer",

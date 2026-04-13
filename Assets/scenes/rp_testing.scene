@@ -715,7 +715,7 @@
     "GameObjectSystems": {
       "Sandbox.Clutter.ClutterGridSystem": {
         "Storage": {
-          "$blob": "a5d88a4f-1bcf-4063-992c-4abddd50ec71"
+          "$blob": "2c96e754-ebbf-48d7-b64f-8ff1238e1710"
         }
       },
       "Sandbox.MovieMaker.MovieRecorderSystem": {

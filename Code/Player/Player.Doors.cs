@@ -126,6 +126,12 @@ public sealed partial class Player
 
 		if ( !Input.Down( "use" ) )
 		{
+			if ( _isDoorPurchaseHolding && _doorPurchaseTarget == roleplayDoor && !_hasTriggeredDoorPurchase )
+			{
+				RequestUseLookedDoor();
+				Input.Clear( "use" );
+			}
+
 			ResetDoorPurchaseHold();
 			return;
 		}
@@ -154,18 +160,22 @@ public sealed partial class Player
 		RequestBuyLookedDoor();
 	}
 
-	void HandleDoorLockInput()
+	public void HandleDoorKeyInput()
 	{
-		if ( !IsLocalPlayer || !Input.Pressed( "attack2" ) )
+		if ( !IsLocalPlayer )
 			return;
 
-		if ( !TryGetLookedRoleplayDoor( out var roleplayDoor ) )
+		if ( Input.Pressed( "attack1" ) )
+		{
+			RequestSetLookedDoorLockState( true );
+			Input.Clear( "attack1" );
+			return;
+		}
+
+		if ( !Input.Pressed( "attack2" ) )
 			return;
 
-		if ( !roleplayDoor.CanControlLock( this ) )
-			return;
-
-		RequestToggleLookedDoorLock();
+		RequestSetLookedDoorLockState( false );
 		Input.Clear( "attack2" );
 	}
 
@@ -312,6 +322,12 @@ public sealed partial class Player
 		if ( !Networking.IsHost || Network.Owner is null )
 			return;
 
+		if ( !IsHoldingDoorKeys() )
+		{
+			Notices.SendNotice( Network.Owner, "key", Color.Red, "Equip your keys first.", 3 );
+			return;
+		}
+
 		if ( !TryGetLookedRoleplayDoor( out var roleplayDoor ) )
 		{
 			Notices.SendNotice( Network.Owner, "block", Color.Red, "Look at a roleplay door first.", 3 );
@@ -408,6 +424,15 @@ public sealed partial class Player
 	}
 
 	[Rpc.Host]
+	void RequestSetLookedDoorLockState( bool locked )
+	{
+		if ( Rpc.Caller != Network.Owner )
+			return;
+
+		TrySetLookedDoorLockState( locked );
+	}
+
+	[Rpc.Host]
 	void RequestToggleLookedDoorLock()
 	{
 		if ( Rpc.Caller != Network.Owner )
@@ -460,6 +485,12 @@ public sealed partial class Player
 		}
 
 		return null;
+	}
+
+	bool IsHoldingDoorKeys()
+	{
+		var inventory = GetComponent<PlayerInventory>();
+		return inventory.IsValid() && inventory.ActiveWeapon is KeyWeapon;
 	}
 
 	[Rpc.Owner( NetFlags.HostOnly )]
