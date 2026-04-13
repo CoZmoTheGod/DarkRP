@@ -7,6 +7,7 @@ public sealed class RoleplayDoor : Component
 	const string GovernmentJobCategory = "Government";
 	const float LockpickCooldownSeconds = 3.0f;
 	public const bool DefaultAllowGovernmentLockpick = true;
+	public const int MaxOwnedPerPlayer = 6;
 
 	[RequireComponent] public Door Door { get; set; }
 
@@ -55,6 +56,15 @@ public sealed class RoleplayDoor : Component
 			return false;
 
 		return Owner == connection;
+	}
+
+	public static int CountOwnedBy( Connection owner )
+	{
+		if ( owner is null || Game.ActiveScene is null )
+			return 0;
+
+		return Game.ActiveScene.GetAllComponents<RoleplayDoor>()
+			.Count( door => door.IsValid() && door.IsOwnedBy( owner ) );
 	}
 
 	public bool CanPress( IPressable.Event e, Door.DoorState state )
@@ -113,6 +123,12 @@ public sealed class RoleplayDoor : Component
 		if ( IsOwned )
 		{
 			error = "This door is already owned.";
+			return false;
+		}
+
+		if ( CountOwnedBy( buyer.Network.Owner ) >= MaxOwnedPerPlayer )
+		{
+			error = $"You already own {MaxOwnedPerPlayer} doors.";
 			return false;
 		}
 
