@@ -13,23 +13,22 @@
 	font-family: Poppins, sans-serif;
 	font-size: 14px;
 	text-align: center;
-	user-select: none;
 	pointer-events: none;
 	z-index: 100;
 
 	.lockpick-content
 	{
-		background: rgba(0, 0, 0, 0.7);
+		display: flex;
+		flex-direction: column;
+		align-items: stretch;
+		background-color: rgba(0, 0, 0, 0.7);
 		padding: 12px 20px;
-		border: 2px solid #FFD700;
 		border-radius: 4px;
-		box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
-		width: fit-content;
+		width: 360px;
 		max-width: 900px;
 
 		.title
 		{
-			display: block;
 			font-weight: 600;
 			margin-bottom: 8px;
 			letter-spacing: 1px;
@@ -42,8 +41,8 @@
 			position: relative;
 			width: 100%;
 			height: 20px;
-			background: rgba(255, 255, 255, 0.1);
-			border: 1px solid rgba(255, 215, 0, 0.3);
+			background-color: rgba(255, 255, 255, 0.1);
+			border: 1px solid rgba(255, 255, 255, 0.12);
 			border-radius: 2px;
 			overflow: hidden;
 			margin-bottom: 8px;
@@ -59,7 +58,6 @@
 
 		.percent
 		{
-			display: block;
 			font-size: 12px;
 			font-weight: 600;
 			letter-spacing: 0.5px;
