@@ -3,9 +3,12 @@ using Sandbox.UI;
 public sealed partial class Player
 {
 	public const string ThiefJobDefinitionPath = "jobs/thief.jobdef";
+	const float JobChangeCooldownSeconds = 60.0f;
 
 	const string PrisonerJumpsuitClothingPath = "models/citizen_clothes/shirt/jumpsuit/prison_jumpsuit.clothing";
 	const string PrisonerShoesClothingPath = "models/citizen_clothes/shoes/boots/black_boots.clothing";
+
+	TimeSince _timeSinceJobChange = JobChangeCooldownSeconds;
 
 	sealed class BodyAppearanceSnapshot
 	{
@@ -70,8 +73,31 @@ public sealed partial class Player
 			return;
 		}
 
+		if ( _timeSinceJobChange < JobChangeCooldownSeconds )
+		{
+			var remaining = MathF.Ceiling( JobChangeCooldownSeconds - _timeSinceJobChange );
+			Notices.SendNotice( Network.Owner, "schedule", Color.Orange, $"Wait {FormatJobChangeCooldown( remaining )} before changing jobs again.", 3 );
+			return;
+		}
+
 		SetJobDefinition( definition );
+		_timeSinceJobChange = 0;
 		_ = ApplyJobDefinitionAsync( definition, true );
+	}
+
+	static string FormatJobChangeCooldown( float seconds )
+	{
+		var wholeSeconds = Math.Max( 0, (int)MathF.Ceiling( seconds ) );
+		var minutes = wholeSeconds / 60;
+		var remainingSeconds = wholeSeconds % 60;
+
+		if ( minutes <= 0 )
+			return $"{remainingSeconds}s";
+
+		if ( remainingSeconds <= 0 )
+			return $"{minutes}m";
+
+		return $"{minutes}m {remainingSeconds}s";
 	}
 
 	public Task ApplyCurrentJobAfterSpawnAsync()
