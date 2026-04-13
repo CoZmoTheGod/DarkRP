@@ -1,3 +1,5 @@
+using Sandbox.UI;
+
 /// <summary>
 /// Payload for spawning a prop model from a cloud ident.
 /// </summary>
@@ -52,11 +54,22 @@ public class PropSpawner : ISpawner
 
 	public Task<List<GameObject>> Spawn( Transform transform, Player player )
 	{
+		if ( !player.CanSpawnProp( out var error ) )
+		{
+			if ( player.Network.Owner is not null )
+			{
+				Notices.SendNotice( player.Network.Owner, "block", Color.Red, error, 3 );
+			}
+
+			return Task.FromResult( new List<GameObject>() );
+		}
+
 		var depth = -Bounds.Mins.z;
 		transform.Position += transform.Up * depth;
 
 		var go = new GameObject( false, "prop" );
 		go.Tags.Add( "removable" );
+		go.AddComponent<SpawnedProp>();
 		go.WorldTransform = transform;
 
 		var prop = go.AddComponent<Prop>();
@@ -73,6 +86,7 @@ public class PropSpawner : ISpawner
 		}
 
 		go.NetworkSpawn( true, null );
+		player.SendPropLimitNotice();
 
 		return Task.FromResult( new List<GameObject> { go } );
 	}

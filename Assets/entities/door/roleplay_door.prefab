@@ -68,7 +68,7 @@
         "OnComponentFixedUpdate": null,
         "OnComponentStart": null,
         "OnComponentUpdate": null,
-        "PurchasePrice": 500,
+        "PurchasePrice": 150,
         "UnlockSound": "entities/door/sounds/door_unlock.sound"
       },
       {

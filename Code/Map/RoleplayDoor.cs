@@ -331,7 +331,7 @@ public sealed class RoleplayDoor : Component
 		{
 			var price = Math.Max( 0, PurchasePrice );
 			var progress = player.IsValid() ? player.GetDoorPurchaseProgress( this ) : 0.0f;
-			var description = $"E open, hold buy ${price:n0}";
+			var description = $"E to open, Hold E to buy {price:n0}$";
 
 			if ( progress > 0.0f )
 			{
