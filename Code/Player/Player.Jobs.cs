@@ -2,6 +2,8 @@ using Sandbox.UI;
 
 public sealed partial class Player
 {
+	public const string ThiefJobDefinitionPath = "jobs/thief.jobdef";
+
 	const string PrisonerJumpsuitClothingPath = "models/citizen_clothes/shirt/jumpsuit/prison_jumpsuit.clothing";
 	const string PrisonerShoesClothingPath = "models/citizen_clothes/shoes/boots/black_boots.clothing";
 
@@ -18,6 +20,7 @@ public sealed partial class Player
 	public string JobDefinitionPath { get; private set; } = JobDefinition.DefaultResourcePath;
 
 	public JobDefinition CurrentJobDefinition => JobDefinition.Get( JobDefinitionPath ) ?? JobDefinition.GetDefault();
+	public bool IsThief => string.Equals( JobDefinitionPath, ThiefJobDefinitionPath, StringComparison.OrdinalIgnoreCase );
 
 	public void SetJobDefinition( JobDefinition definition )
 	{

@@ -1,9 +1,12 @@
 using Facepunch;
+using Sandbox.UI;
 using System.Text.Json.Serialization;
 
 public sealed class RoleplayDoor : Component
 {
 	const string GovernmentJobCategory = "Government";
+	const float LockpickCooldownSeconds = 3.0f;
+	public const bool DefaultAllowGovernmentLockpick = true;
 
 	[RequireComponent] public Door Door { get; set; }
 
@@ -12,6 +15,9 @@ public sealed class RoleplayDoor : Component
 
 	[Property, Sync( SyncFlags.FromHost )]
 	public bool IsGovernment { get; set; }
+
+	[Property, Sync( SyncFlags.FromHost ), Group( "Lockpick" )]
+	public bool AllowGovernmentLockpick { get; set; } = DefaultAllowGovernmentLockpick;
 
 	[Property, Group( "Sound" )]
 	public SoundEvent LockSound { get; set; } = new( "entities/door/sounds/door_lock.sound" );
@@ -22,6 +28,8 @@ public sealed class RoleplayDoor : Component
 	[Sync( SyncFlags.FromHost )]
 	private Guid _ownerId { get; set; }
 
+	private TimeUntil _lockpickCooldown;
+
 	[Property, ReadOnly, JsonIgnore]
 	public Connection Owner
 	{
@@ -31,6 +39,7 @@ public sealed class RoleplayDoor : Component
 
 	public bool IsOwned => Owner is not null;
 	public bool CanBePurchased => !IsGovernment && !IsOwned;
+	bool CanLockpickGovernmentDoor => AllowGovernmentLockpick || DefaultAllowGovernmentLockpick;
 
 	public bool IsOwnedBy( Connection connection )
 	{
@@ -42,7 +51,20 @@ public sealed class RoleplayDoor : Component
 
 	public bool CanPress( IPressable.Event e, Door.DoorState state )
 	{
-		return state is Door.DoorState.Open or Door.DoorState.Closed;
+		if ( state is not (Door.DoorState.Open or Door.DoorState.Closed) )
+			return false;
+
+		var player = GetPlayer( e );
+		if ( !player.IsValid() )
+			return false;
+
+		if ( CanBePurchased )
+			return true;
+
+		if ( CanUseDoor( player ) )
+			return true;
+
+		return CanAttemptLockpick( player );
 	}
 
 	public bool Press( IPressable.Event e, Door.DoorState state )
@@ -50,19 +72,14 @@ public sealed class RoleplayDoor : Component
 		if ( !CanPress( e, state ) )
 			return false;
 
-		if ( IsGovernment )
-		{
-			if ( !e.Source.IsValid() )
-				return false;
+		var player = GetPlayer( e );
+		if ( !player.IsValid() )
+			return false;
 
-			Door.Toggle( e.Source.GameObject );
-			return true;
-		}
+		if ( CanBePurchased )
+			return false;
 
-		if ( !IsOwned )
-			return true;
-
-		if ( !e.Source.IsValid() )
+		if ( !CanUseDoor( player ) )
 			return false;
 
 		Door.Toggle( e.Source.GameObject );
@@ -190,6 +207,97 @@ public sealed class RoleplayDoor : Component
 		return true;
 	}
 
+	public bool TryLockpick( Player actor, out string error )
+	{
+		error = null;
+
+		if ( !CanAttemptLockpick( actor, out error ) )
+			return false;
+
+		if ( _lockpickCooldown > 0.0f )
+		{
+			error = "Lockpick is cooling down.";
+			return false;
+		}
+
+		// Unlock the door
+		Door.IsLocked = false;
+
+		// Mark that this player just lockpicked this door (bypasses permission checks on toggle)
+		actor.SetDoorLockpickBypass( this );
+
+		// Toggle the door state directly
+		if ( Door.State is Door.DoorState.Closed or Door.DoorState.Closing )
+		{
+			Door.OpenFromServer( actor.GameObject );
+		}
+		else if ( Door.State is Door.DoorState.Open or Door.DoorState.Opening )
+		{
+			Door.CloseFromServer( actor.GameObject );
+		}
+
+		_lockpickCooldown = LockpickCooldownSeconds;
+
+		if ( UnlockSound is not null )
+		{
+			PlayLockSound( UnlockSound );
+		}
+
+		if ( Owner is { } ownerConnection && ownerConnection != actor.Network.Owner )
+		{
+			Notices.SendNotice( ownerConnection, "warning", Color.Orange, $"{actor.DisplayName} lockpicked your door.", 3 );
+		}
+
+		return true;
+	}
+
+	public bool CanAttemptLockpick( Player actor )
+	{
+		return CanAttemptLockpick( actor, out _ );
+	}
+
+	public bool CanAttemptLockpick( Player actor, out string error )
+	{
+		error = null;
+
+		if ( !actor.IsValid() )
+		{
+			error = "Invalid lockpick request.";
+			return false;
+		}
+
+		if ( !actor.IsThief )
+		{
+			error = "Only the thief can use lockpick.";
+			return false;
+		}
+
+		if ( IsGovernment )
+		{
+			if ( !CanLockpickGovernmentDoor )
+			{
+				error = "Government doors can't be lockpicked.";
+				return false;
+			}
+
+			return true;
+		}
+
+		if ( !IsOwned )
+		{
+			error = "Only owned doors can be lockpicked.";
+			return false;
+		}
+
+		if ( IsOwnedBy( actor.Network.Owner ) )
+		{
+			error = "This is your own door.";
+			return false;
+		}
+
+		return true;
+	}
+
 	public IPressable.Tooltip BuildTooltip( Player player, Door.DoorState state )
 	{
 		var isOwner = player.IsValid() && IsOwnedBy( player.Network.Owner );
@@ -198,6 +306,20 @@ public sealed class RoleplayDoor : Component
 
 		if ( IsGovernment )
 		{
+			if ( player.IsValid() && player.IsThief && CanLockpickGovernmentDoor && Door.IsLocked )
+			{
+				var progress = player.GetDoorLockpickProgress( this );
+				var description = "Government door - Hold attack to lockpick";
+
+				if ( progress > 0.0f )
+				{
+					var percent = (int)MathF.Round( progress * 100.0f );
+					description = $"Government door - Hold attack to lockpick {BuildProgressBar( progress )} {percent}%";
+				}
+
+				return new IPressable.Tooltip( "Lockpick", "key", description );
+			}
+
 			if ( CanAccessGovernmentDoor( player ) )
 			{
 				var action = Door.IsLocked ? "unlock" : "lock";
@@ -220,6 +342,23 @@ public sealed class RoleplayDoor : Component
 			}
 
 			return new IPressable.Tooltip( "Buy Door", "$", description );
+		}
+
+		if ( player.IsValid() && player.IsThief && !IsOwnedBy( player.Network.Owner ) )
+		{
+			if ( Door.IsLocked || player.IsDoorLockpickHolding && player.DoorLockpickTarget == this )
+			{
+				var progress = player.GetDoorLockpickProgress( this );
+				var description = "Owned door - Hold attack to lockpick";
+
+				if ( progress > 0.0f )
+				{
+					var percent = (int)MathF.Round( progress * 100.0f );
+					description = $"Owned door - Hold attack to lockpick {BuildProgressBar( progress )} {percent}%";
+				}
+
+				return new IPressable.Tooltip( "Lockpick", "key", description );
+			}
 		}
 
 		if ( isOwner )
@@ -251,7 +390,12 @@ public sealed class RoleplayDoor : Component
 			return false;
 
 		if ( IsGovernment )
-			return CanAccessGovernmentDoor( player );
+		{
+			if ( CanAccessGovernmentDoor( player ) )
+				return true;
+
+			return false;
+		}
 
 		if ( !IsOwned )
 			return false;
