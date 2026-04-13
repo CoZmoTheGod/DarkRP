@@ -117,13 +117,15 @@ public sealed class ShatterGlassEntity : Component, Component.ExecuteInEditor, C
 
 	[Property, MakeDirty] public Material Material { get; set; }
 	[Property, MakeDirty] public Surface Surface { get; set; }
+	[Property, MakeDirty] public Vector2 GlassSize { get; set; } = new( 100.0f, 100.0f );
+	[Property, MakeDirty] public bool UseGlassSize { get; set; } = true;
 	[Property, MakeDirty] public float Thickness { get; set; } = 1;
 	[Property, MakeDirty] public Vector3 TextureAxisU { get; set; } = Vector3.Forward;
 	[Property, MakeDirty] public Vector3 TextureAxisV { get; set; } = Vector3.Right;
 	[Property, MakeDirty] public Vector2 TextureScale { get; set; } = 1;
 	[Property, MakeDirty] public Vector2 TextureOffset { get; set; } = 0;
 	[Property, MakeDirty] public Vector2 TextureSize { get; set; } = 512;
-	[Property] public List<Vector2> Points { get; set; } = DefaultPoints.ToList();
+	[Property, MakeDirty, ShowIf( nameof( UseGlassSize ), false )] public List<Vector2> Points { get; set; } = DefaultPoints.ToList();
 	[Property] public float ShardLifeTime { get; set; } = 1.0f;
 	[Property] public bool AutoRebuild { get; set; } = true;
 	[Property, Range( 0, 300 ), Step( 1 ), ShowIf( nameof( AutoRebuild ), true )]
@@ -206,6 +208,7 @@ public sealed class ShatterGlassEntity : Component, Component.ExecuteInEditor, C
 
 		Surface ??= Surface.FindByName( "glass" );
 		Material ??= Material.Load( "materials/glass.vmat" );
+		GlassSize = new Vector2( MathF.Max( 1.0f, GlassSize.x ), MathF.Max( 1.0f, GlassSize.y ) );
 		Points ??= DefaultPoints.ToList();
 	}
 
@@ -218,6 +221,19 @@ public sealed class ShatterGlassEntity : Component, Component.ExecuteInEditor, C
 
 	private List<Vector2> GetValidPoints()
 	{
+		if ( UseGlassSize )
+		{
+			var halfSize = new Vector2( MathF.Max( 1.0f, GlassSize.x ), MathF.Max( 1.0f, GlassSize.y ) ) * 0.5f;
+
+			return
+			[
+				new( -halfSize.x, -halfSize.y ),
+				new( halfSize.x, -halfSize.y ),
+				new( halfSize.x, halfSize.y ),
+				new( -halfSize.x, halfSize.y )
+			];
+		}
+
 		if ( Points is { Count: >= 3 } )
 			return Points;
 
