@@ -320,6 +320,10 @@ public partial class Physgun
 
 	Sandbox.Physics.ControlJoint _joint;
 	PhysicsBody _body;
+	Rigidbody _collisionSuppressedBody;
+	bool _collisionSuppressedBodyHadSuppressedTag;
+
+	const string CollisionSuppressedTag = "physgun_held";
 
 	void RemoveJoint()
 	{
@@ -330,10 +334,44 @@ public partial class Physgun
 		_body = null;
 	}
 
+	void SuppressHeldBodyCollision( Rigidbody body )
+	{
+		if ( !body.IsValid() || body.IsProxy )
+		{
+			RestoreHeldBodyCollision();
+			return;
+		}
+
+		if ( _collisionSuppressedBody != body )
+		{
+			RestoreHeldBodyCollision();
+
+			_collisionSuppressedBody = body;
+			_collisionSuppressedBodyHadSuppressedTag = body.Tags.Has( CollisionSuppressedTag );
+		}
+
+		body.Tags.Set( CollisionSuppressedTag, true );
+	}
+
+	void RestoreHeldBodyCollision( Rigidbody expectedBody = null )
+	{
+		if ( expectedBody.IsValid() && _collisionSuppressedBody != expectedBody )
+			return;
+
+		if ( _collisionSuppressedBody.IsValid() && !_collisionSuppressedBodyHadSuppressedTag )
+		{
+			_collisionSuppressedBody.Tags.Set( CollisionSuppressedTag, false );
+		}
+
+		_collisionSuppressedBody = null;
+		_collisionSuppressedBodyHadSuppressedTag = false;
+	}
+
 	protected override void OnDisabled()
 	{
 		base.OnDisabled();
 
+		RestoreHeldBodyCollision();
 		RemoveJoint();
 		CloseBeam();
 
@@ -348,6 +386,7 @@ public partial class Physgun
 
 		if ( !CanMove( _state ) )
 		{
+			RestoreHeldBodyCollision();
 			RemoveJoint();
 
 			if ( CanMove( _stateHovered ) && _stateHovered.Pulling )
@@ -363,6 +402,8 @@ public partial class Physgun
 
 		// If we just launched, don't add a joint until state has let go.
 		if ( _launched ) return;
+
+		SuppressHeldBodyCollision( _state.Body );
 
 		_body ??= new PhysicsBody( Scene.PhysicsWorld ) { BodyType = PhysicsBodyType.Keyframed, AutoSleep = false };
 
@@ -474,6 +515,8 @@ public partial class Physgun
 	{
 		if ( !body.IsValid() ) return;
 
+		RestoreHeldBodyCollision( body );
+
 		var effect = FreezeEffectPrefab.Clone( body.WorldTransform );
 
 		foreach ( var emitter in effect.GetComponentsInChildren<ParticleModelEmitter>() )
@@ -528,6 +571,7 @@ public partial class Physgun
 		// We already launched.
 		if ( _launched ) return;
 
+		RestoreHeldBodyCollision( body );
 		RemoveJoint();
 
 		var mass = body.Mass;
