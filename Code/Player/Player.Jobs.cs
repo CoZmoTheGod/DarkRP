@@ -135,12 +135,12 @@ public sealed partial class Player
 			return;
 		}
 
-		await ApplyClothingAsync( definition?.Clothing );
+		await ApplyClothingAsync( definition?.Clothing, definition?.PreserveOwnerAvatarAppearance == true );
 	}
 
 	async Task ApplyPrisonerClothingAsync()
 	{
-		await ApplyClothingAsync( [PrisonerJumpsuitClothingPath, PrisonerShoesClothingPath] );
+		await ApplyClothingAsync( [PrisonerJumpsuitClothingPath, PrisonerShoesClothingPath], false );
 	}
 
 	async Task RestoreJobClothingAsync()
@@ -165,7 +165,7 @@ public sealed partial class Player
 		GameObject.Network?.Refresh();
 	}
 
-	async Task ApplyClothingAsync( IEnumerable<string> clothingPaths )
+	async Task ApplyClothingAsync( IEnumerable<string> clothingPaths, bool preserveOwnerAvatarAppearance )
 	{
 		if ( !Body.IsValid() )
 			return;
@@ -179,9 +179,45 @@ public sealed partial class Player
 			: Body.GetComponent<SkinnedModelRenderer>( true );
 
 		var appearance = CaptureBodyAppearance( bodyRenderer );
+		var jobClothing = ResolveClothing( clothingPaths ).ToArray();
+		var ownerAppearance = preserveOwnerAvatarAppearance && Network.Owner is not null
+			? ClothingContainer.CreateFromConnection( Network.Owner, dresser.RemoveUnownedItems )
+			: null;
 
 		dresser.Clothing.Clear();
 
+		foreach ( var clothing in jobClothing )
+		{
+			AddClothing( dresser.Clothing, clothing );
+		}
+
+		if ( ownerAppearance is not null )
+		{
+			foreach ( var entry in ownerAppearance.Clothing )
+			{
+				if ( !CanPreserveOwnerClothing( entry.Clothing, jobClothing ) )
+					continue;
+
+				dresser.Clothing.Add( entry );
+			}
+		}
+
+		foreach ( var clothing in jobClothing )
+		{
+			if ( !HasClothing( dresser.Clothing, clothing ) )
+				AddClothing( dresser.Clothing, clothing );
+		}
+
+		dresser.Clear();
+		dresser.Source = Dresser.ClothingSource.Manual;
+		await dresser.Apply();
+		RestoreBodyAppearance( bodyRenderer, appearance );
+		Body.Network?.Refresh();
+		GameObject.Network?.Refresh();
+	}
+
+	static IEnumerable<Clothing> ResolveClothing( IEnumerable<string> clothingPaths )
+	{
 		foreach ( var clothingPath in clothingPaths ?? [] )
 		{
 			if ( string.IsNullOrWhiteSpace( clothingPath ) )
@@ -191,18 +227,36 @@ public sealed partial class Player
 			if ( clothing is null )
 				continue;
 
-			dresser.Clothing.Add( new ClothingContainer.ClothingEntry
-			{
-				Clothing = clothing
-			} );
+			yield return clothing;
 		}
+	}
 
-		dresser.Clear();
-		dresser.Source = Dresser.ClothingSource.Manual;
-		await dresser.Apply();
-		RestoreBodyAppearance( bodyRenderer, appearance );
-		Body.Network?.Refresh();
-		GameObject.Network?.Refresh();
+	static void AddClothing( ICollection<ClothingContainer.ClothingEntry> clothingEntries, Clothing clothing )
+	{
+		if ( clothingEntries is null || clothing is null )
+			return;
+
+		clothingEntries.Add( new ClothingContainer.ClothingEntry
+		{
+			Clothing = clothing
+		} );
+	}
+
+	static bool HasClothing( IEnumerable<ClothingContainer.ClothingEntry> entries, Clothing clothing )
+	{
+		if ( entries is null || clothing is null )
+			return false;
+
+		return entries.Any( entry => entry.Clothing == clothing
+			|| string.Equals( entry.Clothing?.ResourcePath, clothing.ResourcePath, StringComparison.OrdinalIgnoreCase ) );
+	}
+
+	static bool CanPreserveOwnerClothing( Clothing ownerClothing, IReadOnlyList<Clothing> jobClothing )
+	{
+		if ( ownerClothing is null )
+			return true;
+
+		return jobClothing.All( job => job is null || (ownerClothing.CanBeWornWith( job ) && job.CanBeWornWith( ownerClothing )) );
 	}
 
 	static BodyAppearanceSnapshot CaptureBodyAppearance( SkinnedModelRenderer renderer )
