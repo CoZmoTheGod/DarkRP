@@ -2,6 +2,11 @@
 @using Sandbox.UI
 @inherits Sandbox.UI.Panel
 
+@if ( IsBlocked )
+{
+    return;
+}
+
 <root>
 
     @if ( Developer )
@@ -28,6 +33,7 @@
     string Type;
     string Path;
     string Source;
+    bool IsBlocked => global::SpawnBlocklist.IsBlockedIdentForPlayer( Player.FindLocalPlayer(), Ident );
 
     /// <summary>
     /// We want to drag from this panel
@@ -55,6 +61,9 @@
 
     protected override async void OnDragStart( DragEvent e )
     {
+        if ( IsBlocked )
+            return;
+
         var dragData = new DragData
         {
             Type = Type,
@@ -79,11 +88,17 @@
 
     protected override void OnClick( MousePanelEvent e )
     {
+        if ( IsBlocked )
+            return;
+
         GameManager.Spawn( Ident, Metadata );
     }
 
     protected override void OnRightClick( MousePanelEvent e )
     {
+        if ( IsBlocked )
+            return;
+
         var menu = MenuPanel.Open( this );
 
         // If inside a spawnlist, offer removal

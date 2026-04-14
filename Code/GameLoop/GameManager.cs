@@ -230,6 +230,14 @@ public sealed partial class GameManager : GameObjectSystem<GameManager>, Compone
 		var player = Player.FindForConnection( Rpc.Caller );
 		if ( player is null ) return;
 
+		var (type, path, source) = SpawnlistItem.ParseIdent( ident );
+
+		if ( SpawnBlocklist.IsBlockedForPlayer( player, type, path ) )
+		{
+			Notices.SendNotice( Rpc.Caller, "block", Color.Red, "This prop is restricted to admins.", 3 );
+			return;
+		}
+
 		var eyes = player.EyeTransform;
 
 		var trace = Game.SceneTrace.Ray( eyes.Position, eyes.Position + eyes.Forward * 200 )
@@ -247,8 +255,6 @@ public sealed partial class GameManager : GameObjectSystem<GameManager>, Compone
 		var spawnTransform = new Transform( trace.EndPosition, facingAngle );
 
 		// TODO - can this user spawn this package?
-
-		var (type, path, source) = SpawnlistItem.ParseIdent( ident );
 
 		ISpawner spawner = type switch
 		{

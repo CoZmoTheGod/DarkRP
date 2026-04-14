@@ -25,7 +25,7 @@
     </Header>
 
     <Body>
-<VirtualGrid Items=@( LastResult.Packages ) ItemSize=@(120)>
+<VirtualGrid Items=@VisiblePackages ItemSize=@(120)>
     <Item Context="item">
         @if (item is Package entry)
         {
@@ -60,6 +60,12 @@
     }
 
     Package.FindResult LastResult;
+
+    IEnumerable<Package> VisiblePackages
+        => LastResult?.Packages?.Where( CanShowPackage ) ?? Enumerable.Empty<Package>();
+
+    bool CanShowPackage( Package package )
+        => !global::SpawnBlocklist.IsBlockedForPlayer( Player.FindLocalPlayer(), "prop", package.FullIdent );
 
     async void Rebuild()
     {

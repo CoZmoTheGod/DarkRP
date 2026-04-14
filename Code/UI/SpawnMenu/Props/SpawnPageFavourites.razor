@@ -10,7 +10,7 @@
     </Header>
 
     <Body>
-        <VirtualGrid Items=@( Entries ) ItemSize=@(120)>
+        <VirtualGrid Items=@VisibleEntries ItemSize=@(120)>
             <Item Context="item">
                 @if (item is Entry entry)
                 {
@@ -41,6 +41,9 @@
         new("https://cdn.sbox.game/asset/fish.moose/thumb.png.56b890737161bf47", "fish.moose"),
         new("https://cdn.sbox.game/asset/starblue.forklifttruck/thumb.png.d684be52bb80e4d8", "starblue.forklifttruck"),
     };
+
+    IEnumerable<Entry> VisibleEntries
+        => Entries.Where( entry => !global::SpawnBlocklist.IsBlockedForPlayer( Player.FindLocalPlayer(), "prop", entry.Ident ) );
 
     void Spawn( string ident )
     {
