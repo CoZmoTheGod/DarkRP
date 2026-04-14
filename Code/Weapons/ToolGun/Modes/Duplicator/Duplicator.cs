@@ -217,6 +217,13 @@ public partial class Duplicator : ToolMode
 		var player = Player.FindForConnection( Rpc.Caller );
 		if ( player is null ) return;
 
+		if ( !player.CanSpawnDuplication( out var error ) )
+		{
+			player.SendDuplicationSpawnDeniedNotice( error );
+			return;
+		}
+
+		player.MarkDuplicationSpawned();
 		var objects = await spawner.Spawn( dest, player );
 
 		if ( objects is { Count: > 0 } )

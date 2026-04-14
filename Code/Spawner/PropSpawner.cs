@@ -56,11 +56,7 @@ public class PropSpawner : ISpawner
 	{
 		if ( !player.CanSpawnProp( out var error ) )
 		{
-			if ( player.Network.Owner is not null )
-			{
-				Notices.SendNotice( player.Network.Owner, "block", Color.Red, error, 3 );
-			}
-
+			player.SendPropSpawnDeniedNotice( error );
 			return Task.FromResult( new List<GameObject>() );
 		}
 
@@ -86,6 +82,7 @@ public class PropSpawner : ISpawner
 		}
 
 		go.NetworkSpawn( true, null );
+		player.MarkPropSpawned();
 		player.SendPropLimitNotice();
 
 		return Task.FromResult( new List<GameObject> { go } );
