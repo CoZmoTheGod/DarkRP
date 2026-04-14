@@ -32,6 +32,7 @@ public class Mass : ToolMode
 	private void SetMass( Rigidbody rb, float mass )
 	{
 		if ( !rb.IsValid() || rb.IsProxy ) return;
+		if ( !TryUseToolActionCooldown() ) return;
 
 		if ( mass <= 0f )
 		{
@@ -49,6 +50,7 @@ public class Mass : ToolMode
 	private void CopyMass( Rigidbody rb )
 	{
 		if ( !rb.IsValid() || rb.IsProxy ) return;
+		if ( !TryUseToolActionCooldown() ) return;
 
 		var mo = rb.GetComponent<MassOverride>();
 		Value = mo.IsValid() ? mo.Mass : rb.Mass;

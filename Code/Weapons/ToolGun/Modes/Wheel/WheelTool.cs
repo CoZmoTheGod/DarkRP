@@ -60,6 +60,7 @@ public class WheelTool : ToolMode
 	public void SpawnWheel( SelectionPoint point, WheelDefinition def, Transform tx )
 	{
 		if ( def == null || def.Prefab?.GetScene() is not Scene scene ) return;
+		if ( !TryUseToolActionCooldown() ) return;
 
 		var wheelGo = scene.Clone( new CloneConfig { StartEnabled = false } );
 		wheelGo.Name = "wheel";

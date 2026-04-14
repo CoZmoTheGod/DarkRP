@@ -59,6 +59,19 @@ public abstract partial class ToolMode : Component, IToolInfo
 		TypeDescription = TypeLibrary.GetType( GetType() );
 	}
 
+	protected bool TryUseToolActionCooldown()
+	{
+		var player = Player;
+		if ( !player.IsValid() )
+			return false;
+
+		if ( player.TryUseToolActionCooldown( Name, out var error ) )
+			return true;
+
+		player.SendToolActionDeniedNotice( error );
+		return false;
+	}
+
 	protected override void OnEnabled()
 	{
 		if ( Network.IsOwner )

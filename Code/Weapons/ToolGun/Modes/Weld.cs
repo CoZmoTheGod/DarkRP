@@ -203,6 +203,9 @@ public class Weld : BaseConstraintToolMode
 			return;
 		}
 
+		if ( !TryUseToolActionCooldown() )
+			return;
+
 		_easyModeAngle = angle;
 		CreateConstraint( point1, point2 );
 		_easyModeAngle = 0f;

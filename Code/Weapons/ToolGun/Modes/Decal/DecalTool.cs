@@ -49,6 +49,7 @@ public class DecalTool : ToolMode
 	public void SpawnDecal( SelectionPoint point, DecalDefinition def )
 	{
 		if ( def == null ) return;
+		if ( !TryUseToolActionCooldown() ) return;
 
 		var pos = point.WorldTransform();
 

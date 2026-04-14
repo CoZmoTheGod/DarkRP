@@ -63,6 +63,8 @@ public class ThrusterTool : ToolMode
 	{
 		if ( thrusterPrefab == null )
 			return;
+		if ( !TryUseToolActionCooldown() )
+			return;
 
 		var go = thrusterPrefab.GetScene().Clone();
 		go.Tags.Add( "removable" );

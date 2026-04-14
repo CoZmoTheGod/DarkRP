@@ -54,6 +54,8 @@ public class EmitterTool : ToolMode
 	{
 		if ( emitterPrefab == null )
 			return;
+		if ( !TryUseToolActionCooldown() )
+			return;
 
 		var go = emitterPrefab.GetScene().Clone();
 		go.Tags.Add( "removable" );

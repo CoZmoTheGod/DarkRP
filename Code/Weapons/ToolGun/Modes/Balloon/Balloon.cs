@@ -68,6 +68,9 @@ public class Balloon : ToolMode
 	[Rpc.Host]
 	public void Spawn( SelectionPoint point, PrefabFile thrusterPrefab, Transform tx, bool withRope, Color spawnTint )
 	{
+		if ( !TryUseToolActionCooldown() )
+			return;
+
 		var go = thrusterPrefab.GetScene().Clone( global::Transform.Zero, startEnabled: false );
 		go.Tags.Add( "removable" );
 		go.WorldTransform = Rigid && withRope ? tx.WithPosition( tx.Position + Vector3.Up * Length ) : tx;

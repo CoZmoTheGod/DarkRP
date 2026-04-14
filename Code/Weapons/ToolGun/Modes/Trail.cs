@@ -54,6 +54,7 @@ public class Trail : ToolMode
 	{
 		if ( !go.IsValid() ) return;
 		if ( go.IsProxy ) return;
+		if ( !TryUseToolActionCooldown() ) return;
 
 		var root = go.Network?.RootGameObject ?? go;
 
@@ -88,6 +89,7 @@ public class Trail : ToolMode
 	{
 		if ( !go.IsValid() ) return;
 		if ( go.IsProxy ) return;
+		if ( !TryUseToolActionCooldown() ) return;
 
 		var root = go.Network?.RootGameObject ?? go;
 

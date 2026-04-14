@@ -44,6 +44,8 @@ public class HoverballTool : ToolMode
 	{
 		if ( hoverballPrefab == null )
 			return;
+		if ( !TryUseToolActionCooldown() )
+			return;
 
 		var go = hoverballPrefab.GetScene().Clone( global::Transform.Zero, startEnabled: false );
 		go.Tags.Add( "removable" );
