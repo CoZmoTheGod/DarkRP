@@ -20,12 +20,14 @@
         "__guid": "083c291c-8def-40c0-9eaa-495bef276d23",
         "__enabled": true,
         "Flags": 0,
+        "AdminRole": "None",
         "Armour": 0,
         "Body": {
           "_type": "gameobject",
           "go": "d0a8e1e1-bce2-477a-908c-3cfc0ac57de8"
         },
         "Health": 100,
+        "JobDefinitionPath": "jobs/citizen.jobdef",
         "JobTitle": "Citizen",
         "MaxArmour": 100,
         "MaxHealth": 100,
@@ -333,7 +335,7 @@
             "__enabled": true,
             "Flags": 0,
             "AnimationGraph": null,
-            "BodyGroups": 681,
+            "BodyGroups": 649,
             "BoneMergeTarget": null,
             "CreateAttachments": true,
             "CreateBoneObjects": true,
@@ -1999,7 +2001,7 @@
                     "__version": 2,
                     "Flags": 0,
                     "Name": "leg_glute_helper_R",
-                    "Position": "0.000003814697,-0.000002384186,-0.000003814697",
+                    "Position": "0,0,0",
                     "Rotation": "-0.0000008046627,-0.0000005662441,0.7070965,-0.7071171",
                     "Scale": "1,1,1",
                     "Tags": "",
@@ -2182,7 +2184,7 @@
                     "__version": 2,
                     "Flags": 0,
                     "Name": "leg_glute_helper_L",
-                    "Position": "-0.00001907349,0.000007629395,-0.00001907349",
+                    "Position": "0,0,0",
                     "Rotation": "-0.0000005364418,-0.000000518281,0.7070963,-0.7071172",
                     "Scale": "1,1,1",
                     "Tags": "",
@@ -3066,6 +3068,75 @@
             "OwnerTransfer": 1,
             "Components": [],
             "Children": []
+          },
+          {
+            "__guid": "8af044de-2893-4fdc-a5dd-3e238b2d6957",
+            "__version": 2,
+            "Flags": 0,
+            "Name": "Clothing - y_front_pants_white",
+            "Position": "0,0,0",
+            "Rotation": "0,0,0,1",
+            "Scale": "1,1,1",
+            "Tags": "clothing",
+            "Enabled": true,
+            "NetworkMode": 2,
+            "NetworkFlags": 0,
+            "NetworkOrphaned": 0,
+            "NetworkTransmit": true,
+            "OwnerTransfer": 1,
+            "Components": [
+              {
+                "__type": "Sandbox.SkinnedModelRenderer",
+                "__guid": "3416e0ab-bdeb-4f92-8e60-82e0b63af401",
+                "__enabled": true,
+                "Flags": 0,
+                "AnimationGraph": null,
+                "BodyGroups": 18446744073709551615,
+                "BoneMergeTarget": {
+                  "_type": "component",
+                  "component_id": "088ccdf7-7a51-47f6-be5c-88081217e16e",
+                  "go": "d0a8e1e1-bce2-477a-908c-3cfc0ac57de8",
+                  "component_type": "SkinnedModelRenderer"
+                },
+                "CreateAttachments": false,
+                "CreateBoneObjects": false,
+                "LodOverride": null,
+                "MaterialGroup": null,
+                "MaterialOverride": null,
+                "Materials": null,
+                "Model": "models/citizen_clothes/underwear/y_front_pants/models/y_front_pants_m_human.vmdl",
+                "Morphs": {},
+                "OnComponentDestroy": null,
+                "OnComponentDisabled": null,
+                "OnComponentEnabled": null,
+                "OnComponentFixedUpdate": null,
+                "OnComponentStart": null,
+                "OnComponentUpdate": null,
+                "Parameters": {
+                  "bools": {},
+                  "ints": {},
+                  "floats": {},
+                  "vectors": {},
+                  "rotations": {}
+                },
+                "PlaybackRate": 1,
+                "RenderOptions": {
+                  "GameLayer": true,
+                  "OverlayLayer": false,
+                  "BloomLayer": false,
+                  "AfterUILayer": false
+                },
+                "RenderType": "On",
+                "Sequence": {
+                  "Name": null,
+                  "Looping": true,
+                  "Blending": false
+                },
+                "Tint": "1,1,1,1",
+                "UseAnimGraph": true
+              }
+            ],
+            "Children": []
           }
         ]
       },
@@ -3090,7 +3161,7 @@
             "__guid": "4704a16b-4224-4754-b2b6-b7bd711ef508",
             "__enabled": true,
             "Flags": 0,
-            "Distance": 15000,
+            "Distance": 2000,
             "Falloff": [
               {
                 "x": 0,
