@@ -286,13 +286,15 @@ public sealed class CleanupSystem : GameObjectSystem<CleanupSystem>, ISceneLoadi
 	[Rpc.Host]
 	public static void RpcCleanUpMine()
 	{
+		if ( !CanManageCleanup( Rpc.Caller ) ) return;
+
 		CleanupPlayer( Rpc.Caller );
 	}
 
 	[Rpc.Host]
 	public static void RpcCleanUpAll()
 	{
-		if ( !Rpc.Caller.IsHost ) return;
+		if ( !CanManageCleanup( Rpc.Caller ) ) return;
 
 		Current?.Cleanup();
 	}
@@ -300,14 +302,22 @@ public sealed class CleanupSystem : GameObjectSystem<CleanupSystem>, ISceneLoadi
 	[Rpc.Host]
 	public static void RpcCleanUpTarget( Connection target )
 	{
-		if ( !Rpc.Caller.IsHost ) return;
+		if ( !CanManageCleanup( Rpc.Caller ) ) return;
 
 		CleanupPlayer( target );
+	}
+
+	static bool CanManageCleanup( Connection caller )
+	{
+		return AdminSystem.Current?.HasSuperAdminAccess( caller ) == true;
 	}
 
 	public static void CleanupPlayer( Connection caller )
 	{
 		Assert.True( Networking.IsHost, "Only the host may call this method!" );
+
+		if ( caller is null )
+			return;
 
 		var removable = Game.ActiveScene.GetAllComponents<Ownable>()
 			.Where( o => o.Owner == caller );

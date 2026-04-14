@@ -33,9 +33,12 @@
                     <label class="ban-name">@e.DisplayName</label>
                     <label class="ban-reason">@e.Reason</label>
                 </div>
-                <div class="ban-options" @onclick=@(() => OpenBanOptions( sid, e ))>
-                    <i>more_vert</i>
-                </div>
+                @if ( CanManageBans )
+                {
+                    <div class="ban-options" @onclick=@(() => OpenBanOptions( sid, e ))>
+                        <i>more_vert</i>
+                    </div>
+                }
             </div>
         }
     }
@@ -44,16 +47,34 @@
 
 @code
 {
-    public override bool IsVisible() => Networking.IsHost;
+    TimeSince _timeSinceBanListRequest = 999;
+
+    bool CanAccessBanList => Player.FindLocalPlayer()?.HasAdminAccess == true;
+    bool CanManageBans => Player.FindLocalPlayer()?.HasSuperAdminAccess == true;
+
+    public override bool IsVisible() => CanAccessBanList;
+
+    protected override void OnAfterTreeRender( bool firstTime )
+    {
+        base.OnAfterTreeRender( firstTime );
+
+        if ( firstTime || _timeSinceBanListRequest > 5.0f )
+        {
+            _timeSinceBanListRequest = 0;
+            BanSystem.RpcRequestBannedList();
+        }
+    }
 
     void OpenBanOptions( SteamId steamId, BanSystem.BanEntry entry )
     {
+        if ( !CanManageBans )
+            return;
+
         var menu = MenuPanel.Open( this );
 
         menu.AddOption( "person_add", "Unban", () =>
         {
-            BanSystem.Current?.Unban( steamId );
-            StateHasChanged();
+            BanSystem.RpcUnban( (long)steamId.Value );
         } );
 
         menu.AddOption( "content_copy", "Copy Steam ID", () =>
@@ -62,4 +83,10 @@
             Notices.AddNotice( "copy_all", Color.Cyan, $"Copied {entry.DisplayName}'s Steam ID to clipboard", 5 );
         } );
     }
+
+    protected override int BuildHash() => HashCode.Combine(
+        CanAccessBanList,
+        CanManageBans,
+        BanSystem.Current?.BanListRevision ?? 0,
+        BanSystem.Current?.GetBannedList().Count ?? 0 );
 }

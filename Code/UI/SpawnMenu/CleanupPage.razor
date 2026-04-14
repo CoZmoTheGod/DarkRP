@@ -12,26 +12,25 @@
         <label class="left">🧼 Clean Up Mine</label>
     </div>
 
-    @if ( Connection.Local.IsHost )
+    <div class="control-row" @onclick=@(() =>CleanUpAll() )>
+        <label class="left">🧹 Clean Up All</label>
+    </div>
+
+    <div class="section-header">Clean Up Player</div>
+
+    @foreach ( var connection in Connection.All )
     {
-        <div class="control-row" @onclick=@(() =>CleanUpAll() )>
-            <label class="left">🧹 Clean Up All</label>
+        var c = connection;
+        <div class="control-row" @onclick=@(() => CleanUpPlayer( c ))>
+            <label class="left">🗑️ @c.DisplayName</label>
         </div>
-
-        <div class="section-header">Clean Up Player</div>
-
-        @foreach ( var connection in Connection.All )
-        {
-            var c = connection;
-            <div class="control-row" @onclick=@(() => CleanUpPlayer( c ))>
-                <label class="left">🗑️ @c.DisplayName</label>
-            </div>
-        }
     }
 </root>
 
 @code
 {
+    public override bool IsVisible() => Player.FindLocalPlayer()?.HasSuperAdminAccess == true;
+
     void CleanUpMine() => CleanupSystem.RpcCleanUpMine();
     void CleanUpAll() => CleanupSystem.RpcCleanUpAll();
     void CleanUpPlayer( Connection c ) => CleanupSystem.RpcCleanUpTarget( c );

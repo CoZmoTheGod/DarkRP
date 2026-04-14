@@ -1,13 +1,16 @@
 using Sandbox.UI;
 
 /// <summary>
-/// Holds a banlist, can ban users
+/// Holds a banlist, can ban users.
 /// </summary>
 public sealed class BanSystem : GameObjectSystem<BanSystem>, Component.INetworkListener
 {
 	public record struct BanEntry( string DisplayName, string Reason );
 
 	private Dictionary<long, BanEntry> _bans = new();
+	private Dictionary<long, BanEntry> _visibleBans = new();
+
+	public int BanListRevision { get; private set; }
 
 	public BanSystem( Scene scene ) : base( scene )
 	{
@@ -24,7 +27,7 @@ public sealed class BanSystem : GameObjectSystem<BanSystem>, Component.INetworkL
 	}
 
 	/// <summary>
-	/// Bans a connected player and kicks them immediately
+	/// Bans a connected player and kicks them immediately.
 	/// </summary>
 	public void Ban( Connection connection, string reason )
 	{
@@ -32,6 +35,7 @@ public sealed class BanSystem : GameObjectSystem<BanSystem>, Component.INetworkL
 
 		_bans[connection.SteamId] = new BanEntry( connection.DisplayName, reason );
 		Save();
+		SendBannedListToAdmins();
 		Scene.Get<Chat>()?.AddSystemText( $"{connection.DisplayName} was banned: {reason}", "🔨" );
 		connection.Kick( reason );
 	}
@@ -46,6 +50,7 @@ public sealed class BanSystem : GameObjectSystem<BanSystem>, Component.INetworkL
 
 		_bans[steamId] = new BanEntry( steamId.ToString(), reason );
 		Save();
+		SendBannedListToAdmins();
 	}
 
 	/// <summary>
@@ -56,20 +61,79 @@ public sealed class BanSystem : GameObjectSystem<BanSystem>, Component.INetworkL
 		Assert.True( Networking.IsHost, "Only the host may unban players." );
 
 		if ( _bans.Remove( steamId ) )
+		{
 			Save();
+			SendBannedListToAdmins();
+		}
 	}
 
 	/// <summary>
-	/// Returns true if the given Steam ID is currently banned
+	/// Returns true if the given Steam ID is currently banned.
 	/// </summary>
 	public bool IsBanned( SteamId steamId ) => _bans.ContainsKey( steamId );
 
 	/// <summary>
-	/// Returns a read-only view of all active bans
+	/// Returns a read-only view of all active bans visible to this instance.
 	/// </summary>
-	public IReadOnlyDictionary<SteamId, BanEntry> GetBannedList() => _bans.ToDictionary( x => (SteamId)x.Key, x => x.Value );
+	public IReadOnlyDictionary<SteamId, BanEntry> GetBannedList()
+	{
+		var bans = Networking.IsHost ? _bans : _visibleBans;
+		return bans.ToDictionary( x => (SteamId)x.Key, x => x.Value );
+	}
 
 	private void Save() => LocalData.Set( "bans", _bans );
+
+	[Rpc.Host]
+	public static void RpcRequestBannedList()
+	{
+		if ( AdminSystem.Current?.HasAdminAccess( Rpc.Caller ) != true )
+			return;
+
+		Current?.SendBannedList( Rpc.Caller );
+	}
+
+	[Rpc.Host]
+	public static void RpcUnban( long steamId )
+	{
+		if ( AdminSystem.Current?.HasSuperAdminAccess( Rpc.Caller ) != true || steamId <= 0 )
+			return;
+
+		Current?.Unban( (SteamId)steamId );
+	}
+
+	void SendBannedListToAdmins()
+	{
+		foreach ( var connection in Connection.All )
+		{
+			if ( AdminSystem.Current?.HasAdminAccess( connection ) != true )
+				continue;
+
+			SendBannedList( connection );
+		}
+	}
+
+	void SendBannedList( Connection connection )
+	{
+		if ( connection is null )
+			return;
+
+		var payload = Json.Serialize( _bans );
+
+		using ( Rpc.FilterInclude( connection ) )
+		{
+			ReceiveBannedList( payload );
+		}
+	}
+
+	[Rpc.Broadcast( NetFlags.HostOnly | NetFlags.Reliable )]
+	static void ReceiveBannedList( string payload )
+	{
+		if ( Current is null )
+			return;
+
+		Current._visibleBans = Json.Deserialize<Dictionary<long, BanEntry>>( payload ) ?? new();
+		Current.BanListRevision++;
+	}
 
 	/// <summary>
 	/// Bans a player by name or Steam ID. Optionally provide a reason.
@@ -80,7 +144,7 @@ public sealed class BanSystem : GameObjectSystem<BanSystem>, Component.INetworkL
 	{
 		if ( !Networking.IsHost ) return;
 
-		// Try parsing as a Steam ID (64-bit integer) first
+		// Try parsing as a Steam ID (64-bit integer) first.
 		if ( ulong.TryParse( target, out var steamIdValue ) )
 		{
 			var steamId = steamIdValue;
@@ -95,7 +159,7 @@ public sealed class BanSystem : GameObjectSystem<BanSystem>, Component.INetworkL
 			return;
 		}
 
-		// Fall back to partial name match
+		// Fall back to partial name match.
 		var conn = GameManager.FindPlayerWithName( target );
 		if ( conn is not null )
 		{
