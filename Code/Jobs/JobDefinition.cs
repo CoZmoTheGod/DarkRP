@@ -31,6 +31,9 @@ public sealed class JobDefinition : GameResource, IDefinitionResource
 	public string[] StartingItems { get; set; } = [];
 
 	[Property]
+	public bool UseOwnerAvatarAppearance { get; set; }
+
+	[Property]
 	public string[] Clothing { get; set; } = [];
 
 	[Property]

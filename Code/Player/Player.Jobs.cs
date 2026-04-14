@@ -129,6 +129,12 @@ public sealed partial class Player
 
 	async Task ApplyJobClothingAsync( JobDefinition definition )
 	{
+		if ( definition?.UseOwnerAvatarAppearance == true )
+		{
+			await ApplyOwnerAvatarAppearanceAsync();
+			return;
+		}
+
 		await ApplyClothingAsync( definition?.Clothing );
 	}
 
@@ -140,6 +146,23 @@ public sealed partial class Player
 	async Task RestoreJobClothingAsync()
 	{
 		await ApplyJobClothingAsync( CurrentJobDefinition );
+	}
+
+	async Task ApplyOwnerAvatarAppearanceAsync()
+	{
+		if ( !Body.IsValid() )
+			return;
+
+		var dresser = Body.GetComponentInChildren<Dresser>( true );
+		if ( !dresser.IsValid() )
+			return;
+
+		dresser.Clothing.Clear();
+		dresser.Clear();
+		dresser.Source = Dresser.ClothingSource.OwnerConnection;
+		await dresser.Apply();
+		Body.Network?.Refresh();
+		GameObject.Network?.Refresh();
 	}
 
 	async Task ApplyClothingAsync( IEnumerable<string> clothingPaths )

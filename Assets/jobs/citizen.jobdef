@@ -8,11 +8,8 @@
   "Command": "/citizen",
   "Order": 0,
   "StartingItems": [],
-  "Clothing": [
-    "models/citizen_clothes/shirt/tshirt/tshirt.clothing",
-    "models/citizen_clothes/trousers/jeans/jeans.clothing",
-    "models/citizen_clothes/shoes/sneakers/sneakers.clothing"
-  ],
+  "UseOwnerAvatarAppearance": true,
+  "Clothing": [],
   "IsDefault": true,
   "__references": [],
   "__version": 0
