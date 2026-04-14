@@ -21,6 +21,8 @@ public abstract partial class ToolMode : Component, IToolInfo
 	/// </summary>
 	public virtual string Name => TypeDescription?.Title ?? GetType().Name;
 
+	protected string ToolLimitKey => GetType().Name;
+
 	/// <summary>
 	/// Description of what this tool does.
 	/// </summary>
@@ -40,6 +42,8 @@ public abstract partial class ToolMode : Component, IToolInfo
 	/// Label for the reload action, or null if none.
 	/// </summary>
 	public virtual string ReloadAction => null;
+
+	protected virtual bool CountsTowardToolSpawnLimit => false;
 
 	/// <summary>
 	/// Tags that TraceSelect will ignore. Override per-tool to filter out specific objects.
@@ -70,6 +74,24 @@ public abstract partial class ToolMode : Component, IToolInfo
 
 		player.SendToolActionDeniedNotice( error );
 		return false;
+	}
+
+	protected bool TryUseToolSpawnLimit()
+	{
+		var player = Player;
+		if ( !player.IsValid() )
+			return false;
+
+		if ( player.CanSpawnToolObject( ToolLimitKey, Name, out var error ) )
+			return true;
+
+		player.SendToolActionDeniedNotice( error );
+		return false;
+	}
+
+	protected void RegisterToolSpawnedObject( GameObject go, bool assignOwnable = true )
+	{
+		Player?.RegisterToolSpawnedObject( go, ToolLimitKey, Name, assignOwnable );
 	}
 
 	protected override void OnEnabled()

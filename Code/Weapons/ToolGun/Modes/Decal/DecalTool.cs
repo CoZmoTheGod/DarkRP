@@ -49,6 +49,7 @@ public class DecalTool : ToolMode
 	public void SpawnDecal( SelectionPoint point, DecalDefinition def )
 	{
 		if ( def == null ) return;
+		if ( !TryUseToolSpawnLimit() ) return;
 		if ( !TryUseToolActionCooldown() ) return;
 
 		var pos = point.WorldTransform();
@@ -63,6 +64,7 @@ public class DecalTool : ToolMode
 		decal.Decals = [def];
 		decal.SortLayer = _layer++;
 
+		RegisterToolSpawnedObject( go );
 		go.NetworkSpawn();
 
 		var undo = Player.Undo.Create();

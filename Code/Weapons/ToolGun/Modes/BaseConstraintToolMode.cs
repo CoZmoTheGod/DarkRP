@@ -107,6 +107,9 @@
 			return;
 		}
 
+		if ( CountsTowardToolSpawnLimit && !TryUseToolSpawnLimit() )
+			return;
+
 		if ( !TryUseToolActionCooldown() )
 			return;
 

@@ -5,6 +5,8 @@
 [Group( "Building" )]
 public class HydraulicTool : BaseConstraintToolMode
 {
+	protected override bool CountsTowardToolSpawnLimit => true;
+
 	public override string Description => Stage == 1 ? "#tool.hint.hydraulictool.stage1" : "#tool.hint.hydraulictool.stage0";
 	public override string PrimaryAction => Stage == 1 ? "#tool.hint.hydraulictool.finish" : "#tool.hint.hydraulictool.source";
 	public override string ReloadAction => "#tool.hint.hydraulictool.remove";
@@ -100,6 +102,7 @@ public class HydraulicTool : BaseConstraintToolMode
 
 		var capsule = jointGo.AddComponent<CapsuleCollider>();
 
+		RegisterToolSpawnedObject( go1 );
 		go2.NetworkSpawn( true, null );
 		go1.NetworkSpawn( true, null );
 		jointGo.NetworkSpawn( true, null );
@@ -219,6 +222,7 @@ public class HydraulicTool : BaseConstraintToolMode
 		sliderA.AddComponent<CapsuleCollider>();
 
 		// TODO: my lord
+		RegisterToolSpawnedObject( goA );
 		goB.NetworkSpawn( true, null );
 		goA.NetworkSpawn( true, null );
 		ballTarget.NetworkSpawn( true, null );

@@ -4,6 +4,8 @@
 [Group( "Constraints" )]
 public class Rope : BaseConstraintToolMode
 {
+	protected override bool CountsTowardToolSpawnLimit => true;
+
 	[Range( -500, 500 )]
 	[Property, Sync]
 	public float Slack { get; set; } = 0.0f;
@@ -90,6 +92,7 @@ public class Rope : BaseConstraintToolMode
 		lineRenderer.Texturing = lineRenderer.Texturing with { Material = Material.Load( "materials/default/rope01.vmat" ), WorldSpace = true, UnitsPerTexture = 32 };
 		lineRenderer.Face = SceneLineObject.FaceMode.Cylinder;
 
+		RegisterToolSpawnedObject( go1 );
 		go2.NetworkSpawn( true, null );
 		go1.NetworkSpawn( true, null );
 

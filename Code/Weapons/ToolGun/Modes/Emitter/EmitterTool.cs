@@ -54,6 +54,8 @@ public class EmitterTool : ToolMode
 	{
 		if ( emitterPrefab == null )
 			return;
+		if ( !TryUseToolSpawnLimit() )
+			return;
 		if ( !TryUseToolActionCooldown() )
 			return;
 
@@ -82,6 +84,7 @@ public class EmitterTool : ToolMode
 
 		ApplyPhysicsProperties( go );
 
+		RegisterToolSpawnedObject( go );
 		go.NetworkSpawn( true, null );
 
 		var undo = Player.Undo.Create();

@@ -6,6 +6,9 @@ using Sandbox.UI;
 [Group( "Render" )]
 public class Trail : ToolMode
 {
+	const string TrailLimitMarkerName = "trail_limit_marker";
+	protected override bool CountsTowardToolSpawnLimit => true;
+
 	[Property, ResourceSelect( Extension = "ldef", AllowPackages = true ), Title( "Line" )]
 	public string Definition { get; set; } = "entities/trails/basic.ldef";
 
@@ -57,6 +60,15 @@ public class Trail : ToolMode
 		if ( !TryUseToolActionCooldown() ) return;
 
 		var root = go.Network?.RootGameObject ?? go;
+		var marker = FindTrailLimitMarker( root );
+		if ( !marker.IsValid() )
+		{
+			if ( !TryUseToolSpawnLimit() )
+				return;
+
+			var markerObject = new GameObject( root, false, TrailLimitMarkerName );
+			RegisterToolSpawnedObject( markerObject, false );
+		}
 
 		var existing = root.GetComponent<TrailRenderer>();
 		if ( existing.IsValid() )
@@ -98,5 +110,22 @@ public class Trail : ToolMode
 		{
 			trail.Destroy();
 		}
+
+		var marker = FindTrailLimitMarker( root );
+		if ( marker.IsValid() )
+		{
+			marker.GameObject.Destroy();
+		}
+	}
+
+	ToolSpawnedObject FindTrailLimitMarker( GameObject root )
+	{
+		if ( !root.IsValid() || Player?.Network.Owner is null )
+			return null;
+
+		return root.GetComponentsInChildren<ToolSpawnedObject>( true )
+			.FirstOrDefault( marker => marker.GameObject.Name == TrailLimitMarkerName
+				&& string.Equals( marker.ToolKey, ToolLimitKey, StringComparison.OrdinalIgnoreCase )
+				&& marker.Owner == Player.Network.Owner );
 	}
 }

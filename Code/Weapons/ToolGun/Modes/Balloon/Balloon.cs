@@ -68,6 +68,9 @@ public class Balloon : ToolMode
 	[Rpc.Host]
 	public void Spawn( SelectionPoint point, PrefabFile thrusterPrefab, Transform tx, bool withRope, Color spawnTint )
 	{
+		if ( !TryUseToolSpawnLimit() )
+			return;
+
 		if ( !TryUseToolActionCooldown() )
 			return;
 
@@ -130,6 +133,7 @@ public class Balloon : ToolMode
 
 		ApplyPhysicsProperties( go );
 
+		RegisterToolSpawnedObject( go );
 		go.NetworkSpawn( true, null );
 
 		foreach ( var c in go.GetComponentsInChildren<Rigidbody>( true ) )

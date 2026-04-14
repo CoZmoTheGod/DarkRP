@@ -60,6 +60,7 @@ public class WheelTool : ToolMode
 	public void SpawnWheel( SelectionPoint point, WheelDefinition def, Transform tx )
 	{
 		if ( def == null || def.Prefab?.GetScene() is not Scene scene ) return;
+		if ( !TryUseToolSpawnLimit() ) return;
 		if ( !TryUseToolActionCooldown() ) return;
 
 		var wheelGo = scene.Clone( new CloneConfig { StartEnabled = false } );
@@ -90,6 +91,7 @@ public class WheelTool : ToolMode
 
 		joint.Body = point.GameObject;
 
+		RegisterToolSpawnedObject( wheelGo );
 		wheelGo.NetworkSpawn( true, null );
 
 		var undo = Player.Undo.Create();

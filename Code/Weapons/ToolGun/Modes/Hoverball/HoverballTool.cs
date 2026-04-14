@@ -44,6 +44,8 @@ public class HoverballTool : ToolMode
 	{
 		if ( hoverballPrefab == null )
 			return;
+		if ( !TryUseToolSpawnLimit() )
+			return;
 		if ( !TryUseToolActionCooldown() )
 			return;
 
@@ -68,6 +70,7 @@ public class HoverballTool : ToolMode
 
 		ApplyPhysicsProperties( go );
 
+		RegisterToolSpawnedObject( go );
 		go.NetworkSpawn( true, null );
 
 		var undo = Player.Undo.Create();

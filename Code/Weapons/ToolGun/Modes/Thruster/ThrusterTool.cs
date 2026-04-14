@@ -63,6 +63,8 @@ public class ThrusterTool : ToolMode
 	{
 		if ( thrusterPrefab == null )
 			return;
+		if ( !TryUseToolSpawnLimit() )
+			return;
 		if ( !TryUseToolActionCooldown() )
 			return;
 
@@ -88,6 +90,7 @@ public class ThrusterTool : ToolMode
 
 		ApplyPhysicsProperties( go );
 
+		RegisterToolSpawnedObject( go );
 		go.NetworkSpawn( true, null );
 
 		// undo

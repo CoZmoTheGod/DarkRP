@@ -3,6 +3,8 @@
 [Group( "Constraints" )]
 public class Elastic : BaseConstraintToolMode
 {
+	protected override bool CountsTowardToolSpawnLimit => true;
+
 	[Range( 0, 15 )]
 	[Property, Sync]
 	public float Frequency { get; set; } = 2.0f;
@@ -59,6 +61,7 @@ public class Elastic : BaseConstraintToolMode
 		lineRenderer.Lighting = true;
 		lineRenderer.CastShadows = true;
 
+		RegisterToolSpawnedObject( go1 );
 		go2.NetworkSpawn();
 		go1.NetworkSpawn();
 
