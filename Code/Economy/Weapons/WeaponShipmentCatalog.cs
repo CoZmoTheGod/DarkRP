@@ -27,7 +27,8 @@ public static class WeaponShipmentCatalog
 		new( "weapons/mp5/mp5.prefab", "SMG Shipment", 12800, "A crate with 10 SMGs ready to distribute.", 10, true ),
 		new( "weapons/shotgun/shotgun.prefab", "Shotgun Shipment", 16800, "A crate with 10 shotguns for close-range muscle.", 10, true ),
 		new( "weapons/m4a1/m4a1.prefab", "M4A1 Shipment", 20800, "A crate with 10 M4A1 rifles for heavier loadouts.", 10, true ),
-		new( "weapons/sniper/sniper.prefab", "Sniper Shipment", 25600, "A crate with 10 sniper rifles for long sightlines.", 10, true )
+		new( "weapons/sniper/sniper.prefab", "Sniper Shipment", 25600, "A crate with 10 sniper rifles for long sightlines.", 10, true ),
+		new( "weapons/rpg/rpg.prefab", "Rocket Launcher Shipment", 80000, "A crate with 10 rocket launchers for high-end weapon dealing.", 10, true )
 	];
 
 	public static IReadOnlyList<WeaponShipmentItemDefinition> GetAll()

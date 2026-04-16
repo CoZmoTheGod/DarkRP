@@ -14,6 +14,38 @@ public sealed class AmmoPickup : BasePickup
 	/// </summary>
 	[Property, Group( "Ammo" )] public int AmmoAmount { get; set; }
 
+	public static bool TrySpawn( Player owner, string prefabPath )
+	{
+		if ( !Networking.IsHost || !owner.IsValid() || string.IsNullOrWhiteSpace( prefabPath ) )
+			return false;
+
+		var prefab = GameObject.GetPrefab( prefabPath );
+		var pickup = prefab?.GetComponent<AmmoPickup>( true );
+		if ( !pickup.IsValid() || pickup.AmmoType is null || pickup.AmmoAmount <= 0 )
+			return false;
+
+		var dropPosition = owner.EyeTransform.Position + owner.EyeTransform.Forward * 48f;
+		var dropVelocity = owner.EyeTransform.Forward * 200f + Vector3.Up * 100f;
+
+		var dropped = prefab.Clone( new CloneConfig
+		{
+			Transform = new Transform( dropPosition ),
+			StartEnabled = true
+		} );
+
+		dropped.Tags.Add( "removable" );
+		dropped.NetworkSpawn();
+		Ownable.Set( dropped, owner.Network.Owner );
+
+		if ( dropped.GetComponent<Rigidbody>() is { } rb )
+		{
+			rb.Velocity = owner.Controller.Velocity + dropVelocity;
+			rb.AngularVelocity = Vector3.Random * 8.0f;
+		}
+
+		return true;
+	}
+
 	public override bool CanPickup( Player player, PlayerInventory inventory )
 	{
 		if ( AmmoType is not null )

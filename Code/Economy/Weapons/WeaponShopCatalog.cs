@@ -29,7 +29,8 @@ public static class WeaponShopCatalog
 		new( "weapons/mp5/mp5.prefab", "SMG", 1600, "A fast-firing SMG built for aggressive short-range pressure.", true ),
 		new( "weapons/shotgun/shotgun.prefab", "Shotgun", 2100, "A close-quarters weapon that deals massive damage up close.", true ),
 		new( "weapons/m4a1/m4a1.prefab", "M4A1", 2600, "A balanced assault rifle that stays effective in most fights.", true ),
-		new( "weapons/sniper/sniper.prefab", "Sniper", 3200, "A high-damage rifle made for long-range picks and hold angles.", true )
+		new( "weapons/sniper/sniper.prefab", "Sniper", 3200, "A high-damage rifle made for long-range picks and hold angles.", true ),
+		new( "weapons/rpg/rpg.prefab", "Rocket Launcher", 10000, "A heavy launcher for expensive, high-impact explosive pressure.", true )
 	];
 
 	public static IReadOnlyList<WeaponShopItemDefinition> GetAll()

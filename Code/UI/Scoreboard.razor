@@ -255,6 +255,14 @@
                                                             Disabled="@(!CanBuyShipment( item ))"
                                                             @onclick="@(() => BuyShipment( item ))" />
                                                 }
+                                                else if ( !string.IsNullOrWhiteSpace( item.AmmoPrefabPath ) )
+                                                {
+                                                    <label class="shop-meta-item">@GetAmmoReserveText( item )</label>
+                                                    <Button Text="Buy"
+                                                            class="menu-action primary shop-buy"
+                                                            Disabled="@(!CanBuyAmmo( item ))"
+                                                            @onclick="@(() => BuyAmmo( item ))" />
+                                                }
                                                 else if ( !string.IsNullOrWhiteSpace( item.MiscPrefabPath ) )
                                                 {
                                                     @if ( string.Equals( item.MiscPrefabPath, TipJar.PrefabPath, StringComparison.OrdinalIgnoreCase ) )
@@ -470,6 +478,7 @@
             string printerDefinitionPath = null,
             string weaponPrefabPath = null,
             string shipmentWeaponPrefabPath = null,
+            string ammoPrefabPath = null,
             string miscPrefabPath = null,
             int shipmentCount = 0 )
         {
@@ -479,6 +488,7 @@
             PrinterDefinitionPath = printerDefinitionPath;
             WeaponPrefabPath = weaponPrefabPath;
             ShipmentWeaponPrefabPath = shipmentWeaponPrefabPath;
+            AmmoPrefabPath = ammoPrefabPath;
             MiscPrefabPath = miscPrefabPath;
             ShipmentCount = shipmentCount;
         }
@@ -489,6 +499,7 @@
         public string PrinterDefinitionPath { get; }
         public string WeaponPrefabPath { get; }
         public string ShipmentWeaponPrefabPath { get; }
+        public string AmmoPrefabPath { get; }
         public string MiscPrefabPath { get; }
         public int ShipmentCount { get; }
     }
@@ -562,6 +573,18 @@
 
                 var definition = WeaponShipmentCatalog.Get( item.ShipmentWeaponPrefabPath );
                 return WeaponShipmentCatalog.ShouldShowInShop( LocalPlayer, definition );
+            } );
+        }
+
+        if ( CurrentShopSection.Title == "Ammo" )
+        {
+            return CurrentShopSection.Items.Where( item =>
+            {
+                if ( string.IsNullOrWhiteSpace( item.AmmoPrefabPath ) )
+                    return true;
+
+                var definition = AmmoShopCatalog.Get( item.AmmoPrefabPath );
+                return AmmoShopCatalog.ShouldShowInShop( LocalPlayer, definition );
             } );
         }
 
@@ -706,6 +729,14 @@
             && WeaponShipmentCatalog.CanPlayerBuy( LocalPlayer, item.ShipmentWeaponPrefabPath, out _ );
     }
 
+    bool CanBuyAmmo( ShopItem item )
+    {
+        return !string.IsNullOrWhiteSpace( item.AmmoPrefabPath )
+            && LocalPlayer?.CanAfford( item.Price ) == true
+            && AmmoShopCatalog.CanPlayerBuy( LocalPlayer, item.AmmoPrefabPath, out _ )
+            && AmmoShopCatalog.TryGetPickupAmmo( item.AmmoPrefabPath, out _, out _ );
+    }
+
     bool CanBuyMiscItem( ShopItem item )
     {
         return !string.IsNullOrWhiteSpace( item.MiscPrefabPath )
@@ -725,6 +756,17 @@
             return string.Empty;
 
         return $"{FormatCurrency( definition.MoneyPerTick )} / {definition.Interval:0}s";
+    }
+
+    string GetAmmoReserveText( ShopItem item )
+    {
+        if ( string.IsNullOrWhiteSpace( item.AmmoPrefabPath ) )
+            return string.Empty;
+
+        if ( !AmmoShopCatalog.TryGetPickupAmmo( item.AmmoPrefabPath, out _, out var ammoAmount ) )
+            return string.Empty;
+
+        return $"+{ammoAmount} ammo";
     }
 
     void BuyPrinter( ShopItem item )
@@ -749,6 +791,14 @@
             return;
 
         LocalPlayer?.RequestBuyWeaponShipment( item.ShipmentWeaponPrefabPath );
+    }
+
+    void BuyAmmo( ShopItem item )
+    {
+        if ( string.IsNullOrWhiteSpace( item.AmmoPrefabPath ) )
+            return;
+
+        LocalPlayer?.RequestBuyAmmo( item.AmmoPrefabPath );
     }
 
     void BuyMiscItem( ShopItem item )
@@ -787,6 +837,13 @@
                         x.Description,
                         shipmentWeaponPrefabPath: x.WeaponPrefabPath,
                         shipmentCount: x.WeaponsPerShipment ) )
+                    .ToArray()
+            ),
+            new ShopSection(
+                "Ammo",
+                "Buy ammo packs for shared weapon reserves.",
+                AmmoShopCatalog.GetAll()
+                    .Select( x => new ShopItem( x.Title, x.Price, x.Description, ammoPrefabPath: x.PrefabPath ) )
                     .ToArray()
             ),
             new ShopSection(
@@ -1053,6 +1110,9 @@
 
                 foreach ( var definition in PrinterDefinitions )
                     hash.Add( definition.ResourcePath );
+
+                foreach ( var definition in AmmoShopCatalog.GetAll() )
+                    hash.Add( definition.PrefabPath );
                 break;
 
             case ScoreboardPage.Administration:
