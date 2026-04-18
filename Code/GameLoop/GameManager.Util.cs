@@ -26,26 +26,6 @@ public sealed partial class GameManager
 	}
 
 	/// <summary>
-	/// RPC to kick a player. Caller must have DarkRP admin access.
-	/// </summary>
-	[Rpc.Host]
-	public static void RpcKickPlayer( Connection target, string reason = "Kicked" )
-	{
-		if ( Current is null )
-			return;
-
-		if ( AdminSystem.Current?.HasAdminAccess( Rpc.Caller ) != true )
-			return;
-
-		if ( target is null || target.IsHost || target == Rpc.Caller )
-			return;
-
-		var finalReason = string.IsNullOrWhiteSpace( reason ) ? "Kicked" : reason.Trim();
-		Current.Kick( target, finalReason );
-		Notices.SendNotice( Rpc.Caller, "person_remove", Color.Green, $"{target.DisplayName} was kicked.", 3 );
-	}
-
-	/// <summary>
 	/// Kicks a player by name or Steam ID. Optionally provide a reason.
 	/// Usage: kick [name|steamid] [reason]
 	/// </summary>

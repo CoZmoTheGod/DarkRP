@@ -15,12 +15,9 @@ public sealed class PhygunWorldmodel : Component
 
 		_tintFrac = MathX.Approach( _tintFrac, pullActive ? 1 : 0, Time.Delta * 5 );
 
-		// Steep ease-in-out so the transition rushes through the midpoint
-		var t = _tintFrac < 0.5f
-			? 8f * _tintFrac * _tintFrac * _tintFrac * _tintFrac
-			: 1f - 8f * (1f - _tintFrac) * (1f - _tintFrac) * (1f - _tintFrac) * (1f - _tintFrac);
-
-		var tint = Color.Lerp( PhysTint, GravTint, t );
+		var tint = _tintFrac <= 0.5f
+			? Color.Lerp( PhysTint, Color.White, _tintFrac * 2 )
+			: Color.Lerp( Color.White, GravTint, (_tintFrac - 0.5f) * 2 );
 
 		if ( GlowEffect is not null )
 			GlowEffect.Tint = tint;

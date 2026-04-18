@@ -136,26 +136,6 @@ public sealed class BanSystem : GameObjectSystem<BanSystem>, Component.INetworkL
 	}
 
 	/// <summary>
-	/// RPC to ban a connected player. Caller must have DarkRP superadmin access.
-	/// </summary>
-	[Rpc.Host]
-	public static void RpcBanPlayer( Connection target, string reason = "Banned" )
-	{
-		if ( Current is null )
-			return;
-
-		if ( AdminSystem.Current?.HasSuperAdminAccess( Rpc.Caller ) != true )
-			return;
-
-		if ( target is null || target.IsHost || target == Rpc.Caller )
-			return;
-
-		var finalReason = string.IsNullOrWhiteSpace( reason ) ? "Banned" : reason.Trim();
-		Current.Ban( target, finalReason );
-		Notices.SendNotice( Rpc.Caller, "gavel", Color.Green, $"{target.DisplayName} was banned.", 3 );
-	}
-
-	/// <summary>
 	/// Bans a player by name or Steam ID. Optionally provide a reason.
 	/// Usage: ban [name|steamid] [reason]
 	/// </summary>
